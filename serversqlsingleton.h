@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QSqlDatabase>
+#include <QSqlQuery>
+#include <QDebug>
 
 typedef int AccountId;
 class ServerSqlSingleton : public QObject
@@ -18,16 +20,16 @@ public:
     AccountId insert_account(QString, QString);
     // 使用id和密码登录
     bool select_account(AccountId, QString);
-    // 添加好友（待定
-    bool insert_friend(AccountId);
-    // 删除好友（待定
-    bool delete_friend(AccountId);
+    // 添加好友（给id1添加好友id2
+    bool insert_friend(AccountId id1, AccountId id2);
+    // 删除好友（给id1删去好友id2
+    bool delete_friend(AccountId id1, AccountId id2);
 private:
     static ServerSqlSingleton* instance;
     static int account_number;
-    QSqlDatabase* accounts_table;
-    QSqlDatabase* friends_table;
-    explicit ServerSqlSingleton();
+    QSqlDatabase database;
+    QSqlQuery* sql_query;
+    explicit ServerSqlSingleton(QObject* parent = nullptr);
 };
 
 inline ServerSqlSingleton *ServerSqlSingleton::get_instance(){
