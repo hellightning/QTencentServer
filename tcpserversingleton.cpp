@@ -208,8 +208,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             // 报文参数：发送者id，发送对象id，发送内容
             int from_id = contents[1].toInt();
             int to_id = contents[2].toInt();
-            qDebug() << "Client(QtId=" << from_id << ") send to "<< "Client(QtId=" << to_id << "): " << chat_content;
             QByteArray chat_content = contents[3];
+            qDebug() << "Client(QtId=" << from_id << ") send to "<< "Client(QtId=" << to_id << "): " << chat_content;
             // 直接将报文原样进行转发给目标，不做额外操作
             send_message(to_id, message);
         }else if(contents[0] == "REQUEST_MESSAGE"){
