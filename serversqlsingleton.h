@@ -22,8 +22,6 @@ public:
     AccountId select_id(QString);
     // 使用昵称和密码注册账号，返回id
     AccountId insert_account(QString, QString);
-    // 使用qtid获取昵称
-    QString select_nickname(AccountId);
     // 使用id和密码登录
     bool select_account(AccountId, QString);
     // 添加好友（给id1添加好友id2
