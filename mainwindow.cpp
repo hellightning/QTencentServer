@@ -6,7 +6,8 @@ ServerMainWindow::ServerMainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    tcp_server = TcpServerSingleton::get_instance();
+//    tcp_server = TcpServerSingleton::get_instance();
+//    需要请直接调用静态方法get_instance()，指针不作为MainWindow的成员
 
 }
 

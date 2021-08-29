@@ -18,12 +18,13 @@ public:
     void close_server();
     void close_socket(qintptr);
     void close_socket(QtId);
-    void ready_read(int, const QByteArray);
     void send_message(int, const QByteArray);
+    void send_message(qintptr, const QByteArray);
 protected:
     void incomingConnection(qintptr description);
 private:
     explicit TcpServerSingleton(QObject *parent = nullptr);
+    static QList<QByteArray> parse_message(QByteArray);
     static TcpServerSingleton* instance;
     QString server_ip;
     QString port;
@@ -39,12 +40,5 @@ signals:
 private slots:
     void slot_close_socket(qintptr);
 };
-
-inline TcpServerSingleton *TcpServerSingleton::get_instance(){
-    if(instance == nullptr){
-        instance = new TcpServerSingleton();
-    }
-    return instance;
-}
 
 #endif // TCPSERVERSINGLETON_H

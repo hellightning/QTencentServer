@@ -34,6 +34,5 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    TcpServerSingleton* tcp_server = nullptr;
 };
 #endif // MAINWINDOW_H
