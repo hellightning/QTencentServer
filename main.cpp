@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include <QApplication>
 
+TcpServerSingleton* TcpServerSingleton::instance = nullptr;
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
