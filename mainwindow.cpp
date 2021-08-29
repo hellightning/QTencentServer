@@ -7,6 +7,7 @@ ServerMainWindow::ServerMainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     tcp_server = TcpServerSingleton::get_instance();
+
 }
 
 ServerMainWindow::~ServerMainWindow()
