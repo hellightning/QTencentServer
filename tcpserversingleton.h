@@ -2,9 +2,13 @@
 #define TCPSERVERSINGLETON_H
 
 #include <QTcpServer>
+#include <QHostAddress>
+#include <QHostInfo>
 #include "servertcpsocket.h"
 #include "serversqlsingleton.h"
 
+typedef int QtId;
+typedef QString Message;
 class TcpServerSingleton : public QTcpServer
 {
 public:
@@ -13,6 +17,7 @@ public:
     void open_server();
     void close_server();
     void close_socket(qintptr);
+    void close_socket(QtId);
     void ready_read(int, const QByteArray);
     void send_message(int, const QByteArray);
 protected:
@@ -20,14 +25,19 @@ protected:
 private:
     explicit TcpServerSingleton(QObject *parent = nullptr);
     static TcpServerSingleton* instance;
+    QString server_ip;
+    QString port;
     QHash<qintptr, ServerTcpSocket*> socket_hash;
+    QHash<QtId, qintptr> descriptor_hash;
+    QHash<QtId, QList<QByteArray>* > message_cache_hash;
     ServerSqlSingleton* sql_instance;
+    QHostAddress hostaddr;
 
 signals:
-    void sig_connected(qintptr, QString);
-    void sig_readyRead(int, QByteArray*);
+    void sig_readyRead(qintptr, QByteArray*);
+    void sig_disconnect(qintptr);
 private slots:
-
+    void slot_close_socket(qintptr);
 };
 
 inline TcpServerSingleton *TcpServerSingleton::get_instance(){
