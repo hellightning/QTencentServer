@@ -1,4 +1,5 @@
 #include "tcpserversingleton.h"
+#include <QDataStream>
 
 const int INIT_QTID = 114514;
 TcpServerSingleton* TcpServerSingleton::get_instance(){
@@ -16,7 +17,7 @@ void TcpServerSingleton::get_network_info()
     /*
      * 获取默认网络信息，将本机ip作为地址
      */
-    hostaddr = QHostInfo::localHostName();
+    hostaddr.setAddress(server_ip);
     qDebug() << hostaddr;
 }
 
@@ -27,8 +28,6 @@ void TcpServerSingleton::open_server()
      * 从UI拉取ip和端口号，开始监听
      */
     get_network_info();
-    hostaddr.setAddress(server_ip);
-    qDebug() << hostaddr;
     if(this->listen(hostaddr, port.toUInt())){
         qDebug() << "Server listening...";
         qDebug() << "Server ip: " << hostaddr;
@@ -144,97 +143,110 @@ void TcpServerSingleton::incomingConnection(qintptr description)
 
     qDebug() << "New client requests for connexion.";
     qDebug() << "Client Descriptor: " << tmp_socket->socketDescriptor();
-
     // 类图上的handler，用lambda处理
     connect(tmp_socket, &ServerTcpSocket::sig_readyRead, [this](qintptr des, QByteArray message){
         // 用换行符/n拆分消息
         // 第一行为报文头，根据报文头进行不同操作
-        QList<QByteArray> contents = parse_message(message);
-        if(contents[0] == "REGISTER"){
+        QDataStream message_stream(&message, QIODevice::ReadOnly);
+        QByteArray feedback;
+        QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
+        QString header;
+        message_stream >> header;
+        qDebug() << message;
+        qDebug() << "Header is: " << header;
+        if(header == "REGISTER"){
             qDebug() << "New user requests for registering.";
             // 报文参数：昵称，密码
-            QByteArray nickname = contents[1];
-            QByteArray password = contents[2];
+            QByteArray nickname;
+            QByteArray password;
+            message_stream >> nickname >> password;
+            qDebug() << nickname;
             // 操作数据库
             int returned_qtid = ServerSqlSingleton::get_instance()->insert_account(nickname, password);
             // 如果注册成功，返回的报文参数为qt号
             if(returned_qtid != -1){
                 qDebug() << "New user(QtId=" << returned_qtid << ") registered";
-                QString send_back_message = "REGISTER_SUCCEED\n" + QString(returned_qtid);
-                send_message(des, send_back_message.toUtf8());
+                feedback_stream << "REGISTER_SUCCEED\n" << returned_qtid << '\n';
+                send_message(des, feedback);
             }else{
                 qDebug() << "New user's register failed.";
-                send_message(des, "REGISTER_FAILED");
+                send_message(des, "REGISTER_FAILED\n");
             }
 
-        }else if(contents[0] == "SIGN_IN"){
+        }else if(header == "SIGN_IN"){
             // 报文参数：qtid，密码
-            QtId qtid = contents[1].toInt();
+            QtId qtid = -1;
+            QByteArray password;
+            message_stream >> qtid >> password;
             qDebug() << "Client(QtId=" << qtid << ") requests for signing in.";
-            QByteArray password = contents[2];
             // 根据成功与否发回回应报文
             if(ServerSqlSingleton::get_instance()->select_account(qtid, password)){
-                send_message(des, "SIGN_IN_SUCCEED");
+
+                send_message(des, "SIGN_IN_SUCCEED\n");
                 qDebug() << "Client(QtId=" << qtid << ") signed in.";
             }else{
-                send_message(des, "SIGN_IN_FAILED");
+                send_message(des, "SIGN_IN_FAILED\n");
                 qDebug() << "Client(QtId=" << qtid << ") failed to signing in.";
             }
-        }else if(contents[0] == "GET_FRIEND_LIST"){
+        }else if(header == "GET_FRIEND_LIST"){
             // 报文参数：请求者qtid
-            QtId qtid = contents[1].toInt();
+            QtId qtid = -1;
+            message_stream >> qtid;
             qDebug() << "Client(QtId=" << qtid << ") requests for friend list.";
             QList<QtId> friend_list = ServerSqlSingleton::get_instance()->select_friends(qtid);
             // 发回报文头FRIEND_LIST，报文参数每行一个好友的qtid
             // TODO：参数也包括每个好友的nickname
             // 这个请求没有失败返回值，失败时好友列表为空
-            QByteArray send_back_message = "FRIEND_LIST\n";
+            feedback_stream << "FRIEND_LIST\n";
             for(auto item : friend_list){
-                send_back_message += item + '\n';
+                feedback_stream << item << '\n';
             }
-            send_message(des, send_back_message);
+            send_message(des, feedback);
             ;
-        }else if(contents[0] == "ADD_FRIEND"){
+        }else if(header == "ADD_FRIEND"){
             // 报文参数：请求者id，目标id
-            QByteArray from_id = contents[1];
-            QByteArray to_id = contents[2];
+            int from_id;
+            int to_id;
+            message_stream >> from_id >> to_id;
             // 返回成功或失败
-            if(ServerSqlSingleton::get_instance()->insert_friend(from_id.toInt(), to_id.toInt())){
-                send_message(des, "ADD_FRIEND_SUCCEED\n" + to_id + "\n");
+            if(ServerSqlSingleton::get_instance()->insert_friend(from_id, to_id)){
+                feedback_stream << "ADD_FRIEND_SUCCEED\n" << to_id << '\n';
+                send_message(des, feedback);
             }else{
                 send_message(des, "ADD_FRIEND_FAILED\n");
             }
-        }else if(contents[0] == "SEND_MESSAGE"){
+        }else if(header == "SEND_MESSAGE"){
             // 报文参数：发送者id，发送对象id，发送内容
-            int from_id = contents[1].toInt();
-            int to_id = contents[2].toInt();
-            QByteArray chat_content = contents[3];
+            int from_id;
+            int to_id;
+            QByteArray chat_content;
+            message_stream >> from_id >> to_id >> chat_content;
+
             qDebug() << "Client(QtId=" << from_id << ") send to "<< "Client(QtId=" << to_id << "): " << chat_content;
             // 直接将报文原样进行转发给目标，不做额外操作
             send_message(to_id, message);
-        }else if(contents[0] == "REQUEST_MESSAGE"){
+        }else if(header == "REQUEST_MESSAGE"){
             // 报文参数：请求者id，请求对象id
             // 用来请求缓存的离线信息，待完善
-            int from_id = contents[1].toInt();
-            int to_id = contents[2].toInt();
+            int from_id;
+            int to_id;
+            message_stream >> from_id >> to_id;
             // 发回格式和发送请求相同，但在一条报文中发回所有缓存消息，每行一条
-            QByteArray send_back_message = "SEND_MESSAGE\n";
-            send_back_message += contents[2] + '\n';
-            send_back_message += contents[1] + '\n';
+            feedback_stream << "SEND_MESSAGE\n" << to_id << '\n' << from_id << '\n';
             if(message_cache_hash.find(from_id) != message_cache_hash.end()){
                 for(auto item : *message_cache_hash[from_id]){
                     auto parsed_item = TcpServerSingleton::parse_message(item);
                     if(parsed_item[1].toInt() == to_id){
-                        send_back_message += parsed_item[3];
+                        feedback_stream << parsed_item[3];
                     }
                 }
             }
-            send_message(des, send_back_message);
+            send_message(des, feedback);
         }
     });
 
     //
-    connect(tmp_socket, &ServerTcpSocket::sig_disconnected, [this](int qtid){
+    connect(tmp_socket, &ServerTcpSocket::sig_disconnected, [this](qintptr qtid){
         close_socket(qtid);
     });
 
@@ -243,6 +255,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
 TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
 {
     get_network_info();
+    open_server();
 //    TcpServerSingleton::qtid_distributed = INIT_QTID + ServerSqlSingleton::account_number;
 }
 

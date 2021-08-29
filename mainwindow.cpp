@@ -23,7 +23,7 @@ QString ServerMainWindow::get_ip()
 
 QString ServerMainWindow::get_port()
 {
-
+    ;
 }
 
 void ServerMainWindow::update_online_list()
