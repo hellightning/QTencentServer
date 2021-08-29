@@ -5,6 +5,10 @@
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QDebug>
+#include <QCoreApplication>
+#include <QSqlRecord>
+#include <QSqlDriver>
+#include <QSqlError>
 
 typedef int AccountId;
 class ServerSqlSingleton : public QObject
