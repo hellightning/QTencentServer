@@ -1,5 +1,6 @@
 #include "tcpserversingleton.h"
 #include <QDataStream>
+#include <future>
 
 const int INIT_QTID = 114514;
 TcpServerSingleton* TcpServerSingleton::get_instance(){
@@ -92,6 +93,7 @@ void TcpServerSingleton::send_message(int qtid, const QByteArray message)
         QDataStream receiving_stream(&receiving, QIODevice::ReadOnly);
         QDataStream sending_stream(&sending, QIODevice::WriteOnly);
         receiving_stream >> header >> from_id >> to_id >> chat_content;
+        chat_content = chat_content.trimmed();
         QPair<QtId, QtId> q_pair(from_id, to_id);
         if(header == "SEND_MESSAGE"){
             sending_stream << header;
@@ -107,7 +109,7 @@ void TcpServerSingleton::send_message(int qtid, const QByteArray message)
         if(message_cache_hash[q_pair]->length() >= 50){
             qDebug() << "Store request refused.";
         }else{
-            message_cache_hash[q_pair]->append(message);
+            message_cache_hash[q_pair]->append(chat_content);
             qDebug() << "Stored message: " << message;
         }
     }else{
@@ -115,7 +117,6 @@ void TcpServerSingleton::send_message(int qtid, const QByteArray message)
         ServerTcpSocket* tmp_socket = socket_hash[descriptor_hash[qtid]];
         tmp_socket->write(message);
         qDebug() << "Sent message:" << message;
-
     }
 }
 void TcpServerSingleton::send_message(qintptr des, const QByteArray message)
@@ -182,7 +183,11 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     feedback_stream << "REGISTER_FAILED";
                 }
             }
-            send_message(des, feedback);
+            // 使用std::future中的async结合lambda，进行异步并发发送消息，下同
+            std::async(std::launch::async, [this](qintptr des, QByteArray feedback){
+                send_message(des, feedback);
+            }, des, feedback);
+            // send_message(des, feedback);
         }else if(header.startsWith("SIGN_IN")){
             // 报文参数：qtid，密码
             QtId qtid = -1;
@@ -200,7 +205,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 feedback_stream << "SIGN_IN_FAILED";
                 qDebug() << "Client(QtId=" << qtid << ") failed to signing in.";
             }
-            send_message(des, feedback);
+            std::async(std::launch::async, [this](qintptr des, QByteArray feedback){
+                send_message(des, feedback);
+            }, des, feedback);
         }else if(header.startsWith("GET_FRIEND_LIST")){
             // 报文参数：请求者qtid
             QtId qtid = -1;
@@ -215,7 +222,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 feedback_stream << item;
                 QByteArray nickname = ServerSqlSingleton::get_instance()->select_nickname(item).toUtf8();
             }
-            send_message(des, feedback);
+            std::async(std::launch::async, [this](qintptr des, QByteArray feedback){
+                send_message(des, feedback);
+            }, des, feedback);
         }else if(header.startsWith("ADD_FRIEND")){
             // 报文参数：请求者id，目标id
             int from_id;
@@ -227,7 +236,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             }else{
                 feedback_stream << "ADD_FFIEND_FAILED";
             }
-            send_message(des, feedback);
+            std::async(std::launch::async, [this](qintptr des, QByteArray feedback){
+                send_message(des, feedback);
+            }, des, feedback);
         }else if(header.startsWith("SEND_MESSAGE")){
             // 报文参数：发送者id，发送对象id，发送内容
             int from_id;
@@ -237,7 +248,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             chat_content = chat_content.trimmed();
             qDebug() << "Client(QtId=" << from_id << ") send to "<< "Client(QtId=" << to_id << "): " << chat_content;
             // 直接将报文原样进行转发给目标，不做额外操作
-            send_message(to_id, message);
+            std::async(std::launch::async, [this](int to_id, QByteArray feedback){
+                send_message(to_id, feedback);
+            }, to_id, feedback);
         }else if(header.startsWith("REQUEST_MESSAGE")){
             // 报文参数：请求者id，请求对象id
             // 用来请求缓存的离线信息，待完善
@@ -250,7 +263,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
                 feedback_stream << *message_cache_hash[q_pair];
             }
-            send_message(des, feedback);
+            std::async(std::launch::async, [this](qintptr des, QByteArray feedback){
+                send_message(des, feedback);
+            }, des, feedback);
         }
     });
 
