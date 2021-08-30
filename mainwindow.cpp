@@ -14,7 +14,6 @@ ServerMainWindow::ServerMainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     TcpServerSingleton* tcp_server = TcpServerSingleton::get_instance();
-    tcp_server->get_network_info();
     connect(tcp_server, SIGNAL(sig_get_ip_list(QHostInfo)), this, SLOT(slot_get_ip_list(QHostInfo)));
 //    需要请直接调用静态方法get_instance()，指针不作为MainWindow的成员
 

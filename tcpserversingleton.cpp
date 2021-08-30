@@ -18,8 +18,19 @@ void TcpServerSingleton::get_network_info()
     /*
      * 获取默认网络信息，将本机ip作为地址
      */
+    QHostInfo::lookupHost(hostinfo.localHostName(), this, SLOT(slot_get_address(QHostInfo)));
     hostaddr.setAddress(server_ip);
     qDebug() << hostaddr;
+}
+
+void TcpServerSingleton::slot_get_address(QHostInfo info)
+{
+    emit sig_get_ip_list(info);
+}
+
+void TcpServerSingleton::slot_close_socket(qintptr)
+{
+
 }
 
 void TcpServerSingleton::open_server()
@@ -28,7 +39,6 @@ void TcpServerSingleton::open_server()
      * 被openServerButton调用
      * 从UI拉取ip和端口号，开始监听
      */
-    get_network_info();
     if(this->listen(hostaddr, port.toUInt())){
         qDebug() << "Server listening...";
         qDebug() << "Server ip: " << hostaddr;
