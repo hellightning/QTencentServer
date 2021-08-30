@@ -82,6 +82,7 @@ void TcpServerSingleton::send_message(int qtid, const QByteArray message)
      * 一般是转发消息
      */
     auto des = descriptor_hash.find(qtid);
+    qDebug() << descriptor_hash << "1" << socket_hash;
     if(des == descriptor_hash.end()
             or (des != descriptor_hash.end()
                 and socket_hash.find(descriptor_hash[qtid]) == socket_hash.end())){
@@ -196,6 +197,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 QByteArray nickname = ServerSqlSingleton::get_instance()->select_nickname(qtid).toUtf8();
                 feedback_stream << nickname;
                 qDebug() << nickname << "(QtId=" << qtid << ") signed in.";
+                descriptor_hash[qtid] = des;
             }else{
                 feedback_stream << "SIGN_IN_FAILED";
                 qDebug() << "Client(QtId=" << qtid << ") failed to signing in.";
