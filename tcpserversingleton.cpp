@@ -158,7 +158,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         QByteArray header;
         message_stream >> header;
         qDebug() << "Header is: " << header;
-        if(header == "REGISTER"){
+        if(header.startsWith("REGISTER")){
             qDebug() << "New user requests for registering.";
             // 报文参数：昵称，密码
             QByteArray nickname;
@@ -183,11 +183,12 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 }
             }
             send_message(des, feedback);
-        }else if(header == "SIGN_IN"){
+        }else if(header.startsWith("SIGN_IN")){
             // 报文参数：qtid，密码
             QtId qtid = -1;
             QByteArray password;
             message_stream >> qtid >> password;
+            password = password.trimmed();
             qDebug() << "Client(QtId=" << qtid << ") requests for signing in.";
             // 根据成功与否发回回应报文
             if(ServerSqlSingleton::get_instance()->select_account(qtid, password)){
@@ -200,7 +201,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 qDebug() << "Client(QtId=" << qtid << ") failed to signing in.";
             }
             send_message(des, feedback);
-        }else if(header == "GET_FRIEND_LIST"){
+        }else if(header.startsWith("GET_FRIEND_LIST")){
             // 报文参数：请求者qtid
             QtId qtid = -1;
             message_stream >> qtid;
@@ -215,7 +216,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 QByteArray nickname = ServerSqlSingleton::get_instance()->select_nickname(item).toUtf8();
             }
             send_message(des, feedback);
-        }else if(header == "ADD_FRIEND"){
+        }else if(header.startsWith("ADD_FRIEND")){
             // 报文参数：请求者id，目标id
             int from_id;
             int to_id;
@@ -227,16 +228,17 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 feedback_stream << "ADD_FFIEND_FAILED";
             }
             send_message(des, feedback);
-        }else if(header == "SEND_MESSAGE"){
+        }else if(header.startsWith("SEND_MESSAGE")){
             // 报文参数：发送者id，发送对象id，发送内容
             int from_id;
             int to_id;
             QByteArray chat_content;
             message_stream >> from_id >> to_id >> chat_content;
+            chat_content = chat_content.trimmed();
             qDebug() << "Client(QtId=" << from_id << ") send to "<< "Client(QtId=" << to_id << "): " << chat_content;
             // 直接将报文原样进行转发给目标，不做额外操作
             send_message(to_id, message);
-        }else if(header == "REQUEST_MESSAGE"){
+        }else if(header.startsWith("REQUEST_MESSAGE")){
             // 报文参数：请求者id，请求对象id
             // 用来请求缓存的离线信息，待完善
             int from_id;
@@ -265,4 +267,3 @@ TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
     open_server();
 //    TcpServerSingleton::qtid_distributed = INIT_QTID + ServerSqlSingleton::account_number;
 }
-
