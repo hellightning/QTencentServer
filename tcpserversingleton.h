@@ -15,7 +15,7 @@ class TcpServerSingleton : public QTcpServer
 public:
     static TcpServerSingleton* get_instance();
     void get_network_info();
-    void open_server();
+    void open_server(QString, QString);
     void close_server();
     void close_socket(qintptr);
     void close_socket(QtId);
@@ -26,7 +26,6 @@ private:
     explicit TcpServerSingleton(QObject *parent = nullptr);
     static TcpServerSingleton* instance;
     QString server_ip = "127.0.0.1";
-    QString port = "2333";
     QHash<qintptr, ServerTcpSocket*> socket_hash;
     QHash<QtId, qintptr> descriptor_hash;
     QHash<QPair<QtId, QtId> , QList<QByteArray>* > message_cache_hash;

@@ -30,15 +30,15 @@ void TcpServerSingleton::slot_get_address(QHostInfo info)
     emit sig_get_ip_list(info);
 }
 
-void TcpServerSingleton::open_server()
+void TcpServerSingleton::open_server(QString ip, QString port)
 {
     /*
      * 被openServerButton调用
      * 从UI拉取ip和端口号，开始监听
      */
-    if(this->listen(hostaddr, port.toUInt())){
+    if(this->listen(QHostAddress(ip), port.toUInt())){
         qDebug() << "Server listening...";
-        qDebug() << "Server ip: " << hostaddr;
+        qDebug() << "Server ip: " << ip;
         qDebug() << "Server port: " + port;
     }
 }
@@ -327,7 +327,6 @@ void TcpServerSingleton::incomingConnection(qintptr description)
 TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
 {
     get_network_info();
-    open_server();
     connect(this, SIGNAL(sig_send_message(int, const QByteArray)),
             this, SLOT(slot_send_message(int, const QByteArray)));
     if(!QMetaType::isRegistered((QMetaType::type("qintptr")))){

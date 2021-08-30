@@ -83,18 +83,19 @@ void ServerMainWindow::clean_backlog_list()
 
 void ServerMainWindow::on_closeServerButton_clicked()
 {
-
+    TcpServerSingleton* instance = TcpServerSingleton::get_instance();
+    instance->close_server();
 }
 
 
 void ServerMainWindow::on_openServerButton_clicked()
 {
-
+    TcpServerSingleton* instance = TcpServerSingleton::get_instance();
+    instance->open_server(ui->comboBox->currentText(), ui->lineEdit_2->text());
 }
 
 void ServerMainWindow::on_online_increase()
 {
-
 }
 
 void ServerMainWindow::on_online_decrease()
