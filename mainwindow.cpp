@@ -18,7 +18,7 @@ ServerMainWindow::~ServerMainWindow()
 
 QString ServerMainWindow::get_ip()
 {
-
+    ;
 }
 
 QString ServerMainWindow::get_port()

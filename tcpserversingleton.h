@@ -24,13 +24,12 @@ protected:
     void incomingConnection(qintptr description);
 private:
     explicit TcpServerSingleton(QObject *parent = nullptr);
-    static QList<QByteArray> parse_message(QByteArray);
     static TcpServerSingleton* instance;
     QString server_ip = "127.0.0.1";
     QString port = "2333";
     QHash<qintptr, ServerTcpSocket*> socket_hash;
     QHash<QtId, qintptr> descriptor_hash;
-    QHash<QtId, QList<QByteArray>* > message_cache_hash;
+    QHash<QPair<QtId, QtId> , QList<QByteArray>* > message_cache_hash;
     ServerSqlSingleton* sql_instance;
     QHostAddress hostaddr;
 
