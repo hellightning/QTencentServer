@@ -11,6 +11,7 @@ typedef int QtId;
 typedef QString Message;
 class TcpServerSingleton : public QTcpServer
 {
+    Q_OBJECT
 public:
     static TcpServerSingleton* get_instance();
     void get_network_info();
@@ -32,12 +33,16 @@ private:
     QHash<QPair<QtId, QtId> , QList<QByteArray>* > message_cache_hash;
     ServerSqlSingleton* sql_instance;
     QHostAddress hostaddr;
+    QHostInfo hostinfo;
 
 signals:
     void sig_readyRead(qintptr, QByteArray*);
     void sig_disconnect(qintptr);
+    void sig_get_ip_list(QHostInfo);
+
 private slots:
     void slot_close_socket(qintptr);
+    void slot_get_address(QHostInfo);
 };
 
 #endif // TCPSERVERSINGLETON_H
