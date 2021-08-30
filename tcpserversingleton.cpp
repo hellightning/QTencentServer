@@ -90,6 +90,7 @@ void TcpServerSingleton::send_message(int qtid, const QByteArray message)
         QtId from_id, to_id;
         QByteArray header, chat_content, sending, receiving;
         receiving = message;
+        qDebug() << receiving << message;
         QDataStream receiving_stream(&receiving, QIODevice::ReadOnly);
         QDataStream sending_stream(&sending, QIODevice::WriteOnly);
         receiving_stream >> header >> from_id >> to_id >> chat_content;
@@ -220,20 +221,44 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QtId qtid = -1;
             message_stream >> qtid;
             qDebug() << "Client(QtId=" << qtid << ") requests for friend list.";
-            std::async(std::launch::async, [this](int qtid, qintptr des){
-                QList<QtId> friend_list = ServerSqlSingleton::get_instance()->select_friends(qtid);
+            QList<QtId>* friend_list;
+            std::async(std::launch::async, [this](int qtid, qintptr des, QList<QtId>* friend_list){
+                *friend_list = ServerSqlSingleton::get_instance()->select_friends(qtid);
                 // 发回报文头FRIEND_LIST，报文参数每行一个好友的qtid
                 // TODO：参数也包括每个好友的nickname
                 // 这个请求没有失败返回值，失败时好友列表为空
                 QByteArray feedback;
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
                 feedback_stream << "FRIEND_LIST";
-                for(auto item : friend_list){
+                feedback_stream << friend_list->length();
+                for(auto item : *friend_list){
                     feedback_stream << item;
                     QByteArray nickname = ServerSqlSingleton::get_instance()->select_nickname(item).toUtf8();
                 }
                 send_message(des, feedback);
-            }, qtid, des);
+            }, qtid, des, friend_list);
+            if(friend_list->length() >= 0){
+                std::async(std::launch::async, [this](int qtid, qintptr des, QList<QtId>* friend_list){
+                    for(auto item : *friend_list){
+                        QPair<QtId, QtId> q_pair(item, qtid);
+                        if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
+                            QList<QByteArray>* t_message_list = message_cache_hash[q_pair];
+                            if(t_message_list != nullptr and t_message_list->length() != 0){
+                                QByteArray t_feedback;
+                                QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
+                                t_stream << "SEND_MESSAGE";
+                                t_stream << item << qtid;
+                                for(auto chat_content : *t_message_list){
+                                    t_stream << chat_content;
+                                }
+                                send_message(des, t_feedback);
+                                delete[] t_message_list;
+                                message_cache_hash.remove(q_pair);
+                            }
+                        }
+                    }
+                }, qtid, des, friend_list);
+            }
         }else if(header.startsWith("ADD_FRIEND")){
             // 报文参数：请求者id，目标id
             int from_id;
@@ -257,13 +282,14 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QByteArray chat_content;
             message_stream >> from_id >> to_id >> chat_content;
             chat_content = chat_content.trimmed();
-            QByteArray feedback;
-            QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
+//            QByteArray feedback;
+//            QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
+//            feedback_stream << message;
             qDebug() << "Client(QtId=" << from_id << ") send to "<< "Client(QtId=" << to_id << "): " << chat_content;
             // 直接将报文原样进行转发给目标，不做额外操作
             std::async(std::launch::async, [this](int to_id, QByteArray feedback){
                 send_message(to_id, feedback);
-            }, to_id, feedback);
+            }, to_id, message);
         }else if(header.startsWith("REQUEST_MESSAGE")){
             // 报文参数：请求者id，请求对象id
             // 用来请求缓存的离线信息，待完善
