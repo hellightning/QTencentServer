@@ -11,6 +11,7 @@ typedef int QtId;
 typedef QString Message;
 class TcpServerSingleton : public QTcpServer
 {
+    Q_OBJECT
 public:
     static TcpServerSingleton* get_instance();
     void get_network_info();
@@ -18,8 +19,7 @@ public:
     void close_server();
     void close_socket(qintptr);
     void close_socket(QtId);
-    void send_message(int, const QByteArray);
-    void send_message(qintptr, const QByteArray);
+
 protected:
     void incomingConnection(qintptr description);
 private:
@@ -34,10 +34,11 @@ private:
     QHostAddress hostaddr;
 
 signals:
-    void sig_readyRead(qintptr, QByteArray*);
-    void sig_disconnect(qintptr);
+    void sig_send_message(int, const QByteArray);
+    void sig_send_message(qintptr, QByteArray);
 private slots:
-    void slot_close_socket(qintptr);
+    void slot_send_message(int, const QByteArray);
+    void slot_send_message(qintptr, const QByteArray);
 };
 
 #endif // TCPSERVERSINGLETON_H
