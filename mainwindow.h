@@ -22,6 +22,8 @@ public:
     void add_backlog_list();
     void clean_backlog_list();
 
+    virtual void paintEvent(QPaintEvent*);
+
 
 private slots:
     void on_closeServerButton_clicked();
