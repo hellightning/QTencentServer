@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "servertcpsocket.h"
 
 #include <QGraphicsDropShadowEffect>
 #include <QPainter>
@@ -12,7 +13,8 @@ ServerMainWindow::ServerMainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-//    tcp_server = TcpServerSingleton::get_instance();
+    TcpServerSingleton* tcp_server = TcpServerSingleton::get_instance();
+    connect(tcp_server, SIGNAL(sig_get_ip_list(QHostInfo)), this, SLOT(slot_get_ip_list(QHostInfo)));
 //    需要请直接调用静态方法get_instance()，指针不作为MainWindow的成员
 
     setWindowFlag(Qt::FramelessWindowHint);
@@ -100,3 +102,13 @@ void ServerMainWindow::on_online_decrease()
 
 }
 
+void ServerMainWindow::slot_get_ip_list(QHostInfo info)
+{
+    if (info.addresses().count() > 0) {
+        qDebug()<<info.addresses().count();
+        for (int i = 0; i < info.addresses().count(); i++) {
+            qDebug()<<info.addresses().at(i);
+            ui->comboBox->addItem(info.addresses().at(i).toString());
+        }
+    }
+}

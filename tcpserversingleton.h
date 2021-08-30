@@ -32,13 +32,16 @@ private:
     QHash<QPair<QtId, QtId> , QList<QByteArray>* > message_cache_hash;
     ServerSqlSingleton* sql_instance;
     QHostAddress hostaddr;
+    QHostInfo hostinfo;
 
 signals:
     void sig_send_message(int, const QByteArray);
     void sig_send_message(qintptr, QByteArray);
+    void sig_get_ip_list(QHostInfo);
 private slots:
     void slot_send_message(int, const QByteArray);
     void slot_send_message(qintptr, const QByteArray);
+    void slot_get_address(QHostInfo);
 };
 
 #endif // TCPSERVERSINGLETON_H

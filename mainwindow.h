@@ -34,6 +34,7 @@ private slots:
 
     void on_online_decrease();
 
+    void slot_get_ip_list(QHostInfo);
 private:
     Ui::MainWindow *ui;
 };
