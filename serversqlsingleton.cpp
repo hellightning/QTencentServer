@@ -164,3 +164,21 @@ bool ServerSqlSingleton::delete_friend(AccountId id1, AccountId id2)
     delete sql_query;
     return result;
 }
+
+QString ServerSqlSingleton::select_nickname(AccountId id)
+{
+    QString result = QString("NO SUCH ID");
+    sql_query = new QSqlQuery(database);
+    QString select_nickname = QString("SELECT nick_name FROM accounts_table WHERE id = %1").arg(id);
+    if (sql_query->prepare(select_nickname)) {
+        if (sql_query->exec()) {
+            qDebug()<<"Select nickname successfully";
+            sql_query->next();
+            result = sql_query->value(0).toString();
+        }
+    }
+    else {
+        qDebug()<<"Select nickname command error!";
+    }
+    return result;
+}

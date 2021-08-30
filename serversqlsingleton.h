@@ -28,6 +28,8 @@ public:
     bool insert_friend(AccountId id1, AccountId id2);
     // 删除好友（给id1删去好友id2
     bool delete_friend(AccountId id1, AccountId id2);
+    // 根据id返回昵称,如果没有则放回"NO SUCH ID"
+    QString select_nickname(AccountId id);
 private:
     static ServerSqlSingleton* instance;
     static int account_number;
