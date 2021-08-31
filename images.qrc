@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>resources/avator/close.png</file>
+        <file>resources/avator/minimize.png</file>
     </qresource>
 </RCC>
