@@ -59,11 +59,11 @@ QList<AccountId> ServerSqlSingleton::select_friends(AccountId target)
     sql_query = new QSqlQuery(database);
     if (sql_query->prepare(select_friends)) {
         if (sql_query->exec()) {
-            qDebug()<<"Select friends list succesfully";
             while (sql_query->next())
             {
                  results.append(sql_query->value(0).toInt());
             }
+            qDebug()<<"Select friends list succesfully";
         }
     }
     else {

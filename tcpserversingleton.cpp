@@ -255,9 +255,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QtId qtid = -1;
             message_stream >> qtid;
             qDebug() << "Client(QtId=" << qtid << ") requests for friend list.";
-            QList<QtId> friend_list;
-            auto fut_friend = QtConcurrent::run(QThreadPool::globalInstance(), [this, &friend_list](int qtid, qintptr des){
-                friend_list = (ServerSqlSingleton::get_instance()->select_friends(qtid));
+            auto fut_friend = QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des){
+                auto friend_list = (ServerSqlSingleton::get_instance()->select_friends(qtid));
                 // 发回报文头FRIEND_LIST，报文参数每行一个好友的qtid
                 // TODO：参数也包括每个好友的nickname
                 // 这个请求没有失败返回值，失败时好友列表为空
