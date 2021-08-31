@@ -91,7 +91,7 @@ void TcpServerSingleton::close_socket(QtId qtid)
     }
 }
 
-void TcpServerSingleton::slot_send_message(int qtid, const QByteArray message)
+void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray message)
 {
     /*
      * 服务器向指定qtid发送message
@@ -117,7 +117,7 @@ void TcpServerSingleton::slot_send_message(int qtid, const QByteArray message)
             sending_stream << to_id;
             sending_stream << from_id;
             sending_stream << "buzai, cnm";
-            slot_send_message(from_id, sending);
+            slot_send_message_qtid(from_id, sending);
         }
         if(message_cache_hash.find(q_pair) == message_cache_hash.end()){
             message_cache_hash[q_pair] = new QList<QByteArray>();
@@ -136,7 +136,7 @@ void TcpServerSingleton::slot_send_message(int qtid, const QByteArray message)
         qDebug() << "Sent message:" << message;
     }
 }
-void TcpServerSingleton::slot_send_message(qintptr des, const QByteArray message)
+void TcpServerSingleton::slot_send_message_des(qintptr des, const QByteArray message)
 {
     /*
      * 服务器向指定descriptor对应的socket发送message
@@ -178,8 +178,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             qDebug() << "New user requests for registering.";
             emit sig_update_gui("New client requests for registering.");
             // 报文参数：昵称，密码
-            QByteArray nickname;
-            QByteArray password;
+            QString nickname;
+            QString password;
             message_stream >> nickname >> password;
             nickname = nickname.trimmed();
             password = password.trimmed();
@@ -196,7 +196,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             }else{
                 qDebug() << nickname;
                 // 操作数据库时也使用async，异步请求
-                QtConcurrent::run(QThreadPool::globalInstance(), [this](QByteArray nickname, QByteArray password, qintptr des){
+                QtConcurrent::run(QThreadPool::globalInstance(), [this](QString nickname, QString password, qintptr des){
                     int returned_qtid = ServerSqlSingleton::get_instance()->insert_account(nickname, password);
                     QByteArray feedback;
                     QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
@@ -216,12 +216,15 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         }else if(header.startsWith("SIGN_IN")){
             // 报文参数：qtid，密码
             QtId qtid = -1;
-            QByteArray password;
+            QString password;
             message_stream >> qtid >> password;
+            qDebug() << qtid << password;
             password = password.trimmed();
             qDebug() << "Client(QtId=" << qtid << ") requests for signing in.";
             // 根据成功与否发回回应报文
-            auto fut_reg = QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, QByteArray password, qintptr des){
+            auto fut_reg = QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, QString password, qintptr des){
+                qDebug() << qtid << password;
+                bool state = false;
                 QByteArray feedback;
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
                 if(ServerSqlSingleton::get_instance()->select_account(qtid, password)){
@@ -233,13 +236,13 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     nickname_hash[qtid] = nickname;
                     emit sig_online_increase(qtid);
                     emit sig_update_gui(QString(nickname + "(QtId=%1) is now online.").arg(qtid));
-                    return true;
+                    state = true;
                 }else{
                     feedback_stream << "SIGN_IN_FAILED";
                     qDebug() << "Client(QtId=" << qtid << ") failed to signing in.";
-                    return false;
                 }
                 emit sig_send_message(des, feedback);
+                return state;
             }, qtid, password, des);
             auto suc = fut_reg.result();
             if(suc){
@@ -311,7 +314,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             // 报文参数：发送者id，发送对象id，发送内容
             int from_id;
             int to_id;
-            QByteArray chat_content;
+            QString chat_content;
             message_stream >> from_id >> to_id >> chat_content;
             chat_content = chat_content.trimmed();
 //            QByteArray feedback;
@@ -360,12 +363,12 @@ TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
 {
     get_network_info();
     connect(this, SIGNAL(sig_send_message(int, const QByteArray)),
-            this, SLOT(slot_send_message(int, const QByteArray)));
+            this, SLOT(slot_send_message_qtid(int, const QByteArray)));
     if(!QMetaType::isRegistered((QMetaType::type("qintptr")))){
         qRegisterMetaType<qintptr>("qintptr");
     }
     connect(this, SIGNAL(sig_send_message(qintptr, const QByteArray)),
-            this, SLOT(slot_send_message(qintptr, const QByteArray)));
+            this, SLOT(slot_send_message_des(qintptr, const QByteArray)));
     //    TcpServerSingleton::qtid_distributed = INIT_QTID + ServerSqlSingleton::account_number;
 }
 

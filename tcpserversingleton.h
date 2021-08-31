@@ -43,8 +43,8 @@ signals:
     void sig_online_decrease(int);
     void sig_update_gui(QString);
 private slots:
-    void slot_send_message(int, const QByteArray);
-    void slot_send_message(qintptr, const QByteArray);
+    void slot_send_message_qtid(int, const QByteArray);
+    void slot_send_message_des(qintptr, const QByteArray);
     void slot_get_address(QHostInfo);
 };
 
