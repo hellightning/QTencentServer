@@ -21,6 +21,9 @@ public:
 
 protected:
     void clean_backlog_list();
+    void mousePressEvent(QMouseEvent* e);
+    void mouseReleaseEvent(QMouseEvent* e);
+    void mouseMoveEvent(QMouseEvent* e);
 
 private slots:
     void on_closeServerButton_clicked();
@@ -30,7 +33,20 @@ private slots:
 
     void add_backlog_list(QString);//在info中的listWidget里显示消息
     void slot_get_ip_list(QHostInfo);
+
+    void on_CloseButton_clicked();
+
+    void on_SmallButton_clicked();
+
+private:
+
+    void drawOutLine(QPainter &painter);
+
 private:
     Ui::MainWindow *ui;
+
+    bool isDrag = false;
+    QPoint mouse_start_point;
+    QPoint window_topleft_point;
 };
 #endif // MAINWINDOW_H

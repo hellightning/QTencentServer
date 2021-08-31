@@ -7,6 +7,7 @@
 #include <QtMath>
 #include <QWidget>
 #include <QPaintEvent>
+#include <QMimeData>
 
 ServerMainWindow::ServerMainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -19,8 +20,9 @@ ServerMainWindow::ServerMainWindow(QWidget *parent)
     connect(tcp_server, SIGNAL(sig_online_decrease(int)), this, SLOT(on_online_decrease(int)));
     connect(tcp_server, SIGNAL(sig_update_gui(QString)), this, SLOT(add_backlog_list(QString)));
 //    需要请直接调用静态方法get_instance()，指针不作为MainWindow的成员
-
+    setAcceptDrops(true);
     setWindowFlag(Qt::FramelessWindowHint);
+    setAttribute(Qt::WA_TranslucentBackground);
     auto shadow_effect = new QGraphicsDropShadowEffect(this);
     shadow_effect->setOffset(0, 0);
     shadow_effect->setColor(Qt::gray);
@@ -31,12 +33,17 @@ ServerMainWindow::ServerMainWindow(QWidget *parent)
     eff2->setColor(Qt::gray);
     eff2->setBlurRadius(8);
     ui->listWidget_2->setGraphicsEffect(eff2);
+    auto shadow_effect3 = new QGraphicsDropShadowEffect(this);
+    shadow_effect3->setOffset(0, 0);
+    shadow_effect3->setColor(Qt::black);
+    shadow_effect3->setBlurRadius(20);
+    ui->MainFrame->setGraphicsEffect(shadow_effect3);
 }
 
 void ServerMainWindow::paintEvent(QPaintEvent *event) {
     QPainterPath path;
     path.setFillRule(Qt::WindingFill);
-    path.addRect(10, 10, this->width()-20, this->height()-20);
+    path.addRect(-10, -10, this->width()+20, this->height()+20);
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.fillPath(path, QBrush(Qt::white));
@@ -46,7 +53,7 @@ void ServerMainWindow::paintEvent(QPaintEvent *event) {
     {
         QPainterPath path;
         path.setFillRule(Qt::WindingFill);
-        path.addRect(10-i, 10-i, this->width()-(10-i)*2, this->height()-(10-i)*2);
+        path.addRect(-i, -i, this->width()-(-i)*2, this->height()-(-i)*2);
         color.setAlpha(150 - qSqrt(i)*50);
         painter.setPen(color);
         painter.drawPath(path);
@@ -73,6 +80,31 @@ void ServerMainWindow::clean_backlog_list()
         delete item;
     }
 }
+
+void ServerMainWindow::mousePressEvent(QMouseEvent *e)
+{
+    if (e->button() == Qt::LeftButton) {
+        isDrag = true;
+        mouse_start_point = e->globalPos();
+        window_topleft_point = frameGeometry().topLeft();
+    }
+}
+
+void ServerMainWindow::mouseReleaseEvent(QMouseEvent *e)
+{
+    if (e->button() == Qt::LeftButton) {
+        isDrag = false;
+    }
+}
+
+void ServerMainWindow::mouseMoveEvent(QMouseEvent *e)
+{
+    if (isDrag) {
+        QPoint dist = e->globalPos() - mouse_start_point;
+        this->move(window_topleft_point + dist);
+    }
+}
+
 
 void ServerMainWindow::on_closeServerButton_clicked()
 {
@@ -112,3 +144,15 @@ void ServerMainWindow::slot_get_ip_list(QHostInfo info)
         }
     }
 }
+
+void ServerMainWindow::on_CloseButton_clicked()
+{
+    TcpServerSingleton::get_instance()->close_server();
+    close();
+}
+
+void ServerMainWindow::on_SmallButton_clicked()
+{
+    setWindowState(Qt::WindowMinimized);
+}
+
