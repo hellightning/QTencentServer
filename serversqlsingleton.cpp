@@ -54,7 +54,8 @@ ServerSqlSingleton::ServerSqlSingleton(QObject* parent) : QObject(parent)
 QList<AccountId> ServerSqlSingleton::select_friends(AccountId target)
 {   //通过id找他的朋友并做成列表返回
     QList<AccountId> results;
-    QString select_friends = QString("SELECT friend_id FROM friends_table WHERE id = %1").arg(target);
+    QString select_friends = QString("SELECT id FROM accounts_table"); //test
+//    QString select_friends = QString("SELECT friend_id FROM friends_table WHERE id = %1").arg(target);
     sql_query = new QSqlQuery(database);
     if (sql_query->prepare(select_friends)) {
         if (sql_query->exec()) {
