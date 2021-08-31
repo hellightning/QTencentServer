@@ -272,7 +272,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 emit sig_send_message(des, feedback);
             }, qtid, des, friend_list);
             if(friend_list.length() >= 0){
-                QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, QList<QtId> friend_list){
+                QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, const QList<QtId>& friend_list){
                     for(auto item : friend_list){
                         QPair<QtId, QtId> q_pair(item, qtid);
                         if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
