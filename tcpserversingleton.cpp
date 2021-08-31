@@ -268,6 +268,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 for(auto item : friend_list){
                     feedback_stream << item;
                     QByteArray nickname = ServerSqlSingleton::get_instance()->select_nickname(item).toUtf8();
+                    feedback_stream << nickname;
                 }
                 emit sig_send_message(des, feedback);
             }, qtid, des, friend_list);
