@@ -63,7 +63,7 @@ void TcpServerSingleton::close_socket(qintptr des)
         qDebug() << "Socket(descriptor=" << des <<") not found.";
     }else{
         ServerTcpSocket* tmp_socket = socket_hash[des];
-        delete tmp_socket;
+        tmp_socket->deleteLater();
         socket_hash.remove(des);
         emit sig_online_decrease(des);
         qDebug() << "Socket(descriptor=" << des <<") closed.";
@@ -326,6 +326,10 @@ void TcpServerSingleton::incomingConnection(qintptr description)
     //
     connect(tmp_socket, &ServerTcpSocket::sig_disconnected, [this](qintptr qtid){
         close_socket(qtid);
+    });
+    // 客户端异常关闭时，可能不发送disconnected信号，这个时候会出现错误
+    connect(tmp_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), [this](QAbstractSocket::SocketError err){
+        qDebug() << err;
     });
 
 }
