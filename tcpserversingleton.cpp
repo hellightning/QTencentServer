@@ -316,7 +316,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 QByteArray feedback;
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
                 if(ServerSqlSingleton::get_instance()->insert_friend(from_id, to_id)){
-                    feedback_stream << "ADD_FRIEND_SUCCEED" << to_id;
+                    qDebug() << instance->get_nickname(to_id);
+                    feedback_stream << "ADD_FRIEND_SUCCEED" << to_id << instance->get_nickname(to_id);
                 }else{
                     feedback_stream << "ADD_FFIEND_FAILED";
                 }
