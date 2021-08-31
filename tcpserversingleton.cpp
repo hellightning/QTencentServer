@@ -269,33 +269,43 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     feedback_stream << item;
                     QString nickname = ServerSqlSingleton::get_instance()->select_nickname(item);
                     feedback_stream << nickname;
-                }
-                emit sig_send_message(des, feedback);
-            }, qtid, des);
-            fut_friend.waitForFinished();
-            if(friend_list.length() >= 0){
-                auto fut_send_offline = QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, const QList<QtId>& friend_list){
-                    qDebug() << friend_list;
-                    for(auto item : friend_list){
-                        QPair<QtId, QtId> q_pair(item, qtid);
-                        if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
-                            QList<QString>* t_message_list = message_cache_hash[q_pair];
-                            if(t_message_list != nullptr and t_message_list->length() != 0){
-                                QByteArray t_feedback;
-                                QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
-                                t_stream << "SEND_MESSAGE";
-                                t_stream << item << qtid;
-                                for(auto chat_content : *t_message_list){
-                                    t_stream << chat_content;
-                                }
-                                emit sig_send_message(des, t_feedback);
-                                delete t_message_list;
-                                message_cache_hash.remove(q_pair);
-                            }
-                        }
+                    QPair<QtId, QtId> q_pair(item, qtid);
+                    if(message_cache_hash.find(q_pair) == message_cache_hash.end()
+                            or message_cache_hash[q_pair]->length() <= 0){
+                        feedback_stream << 0;
+                    }else{
+                        auto f_message = message_cache_hash[q_pair];
+                        feedback_stream << f_message->length();
+                        for(auto item : *f_message){
+                            feedback_stream << item;
+                       }
                     }
-                }, qtid, des, friend_list);
-            }
+                emit sig_send_message(des, feedback);
+                }
+            }, qtid, des);
+//            if(friend_list.length() >= 0){
+//                auto fut_send_offline = QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, const QList<QtId>& friend_list){
+//                    qDebug() << friend_list;
+//                    for(auto item : friend_list){
+//                        QPair<QtId, QtId> q_pair(item, qtid);
+//                        if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
+//                            QList<QString>* t_message_list = message_cache_hash[q_pair];
+//                            if(t_message_list != nullptr and t_message_list->length() != 0){
+//                                QByteArray t_feedback;
+//                                QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
+//                                t_stream << "SEND_MESSAGE";
+//                                t_stream << item << qtid;
+//                                for(auto chat_content : *t_message_list){
+//                                    t_stream << chat_content;
+//                                }
+//                                emit sig_send_message(des, t_feedback);
+//                                delete t_message_list;
+//                                message_cache_hash.remove(q_pair);
+//                            }
+//                        }
+//                    }
+//                }, qtid, des, friend_list);
+//            }
         }else if(header.startsWith("ADD_FRIEND")){
             // 报文参数：请求者id，目标id
             int from_id;
