@@ -220,11 +220,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             message_stream >> qtid >> password;
             password = password.trimmed();
             qDebug() << "Client(QtId=" << qtid << ") requests for signing in.";
-            if(socket_hash.find(des) != socket_hash.end()){
-                socket_hash[des]->memorize_qtid(qtid);
-            }
             // 根据成功与否发回回应报文
-            QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, QByteArray password, qintptr des){
+            auto fut_reg = QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, QByteArray password, qintptr des){
                 QByteArray feedback;
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
                 if(ServerSqlSingleton::get_instance()->select_account(qtid, password)){
@@ -236,12 +233,20 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     nickname_hash[qtid] = nickname;
                     emit sig_online_increase(qtid);
                     emit sig_update_gui(QString(nickname + "(QtId=%1) is now online.").arg(qtid));
+                    return true;
                 }else{
                     feedback_stream << "SIGN_IN_FAILED";
                     qDebug() << "Client(QtId=" << qtid << ") failed to signing in.";
+                    return false;
                 }
                 emit sig_send_message(des, feedback);
             }, qtid, password, des);
+            auto suc = fut_reg.result();
+            if(suc){
+                if(socket_hash.find(des) != socket_hash.end()){
+                    socket_hash[des]->memorize_qtid(qtid);
+                }
+            }
         }else if(header.startsWith("GET_FRIEND_LIST")){
             // 报文参数：请求者qtid
             QtId qtid = -1;
