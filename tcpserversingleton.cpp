@@ -103,14 +103,14 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
                 and socket_hash.find(descriptor_hash[qtid]) == socket_hash.end())){
         qDebug() << "Client(QtId=" << qtid <<") is offline. Message storing...";
         QtId from_id, to_id;
-        QByteArray header, chat_content, sending, receiving;
+        QByteArray header, sending, receiving;
+        QString chat_content;
         receiving = message;
         qDebug() << receiving << message;
         QDataStream receiving_stream(&receiving, QIODevice::ReadOnly);
         QDataStream sending_stream(&sending, QIODevice::WriteOnly);
         receiving_stream >> header >> from_id >> to_id >> chat_content;
         emit sig_update_gui(get_nickname(from_id) + " send to " + get_nickname(to_id) + ": " + chat_content);
-        chat_content = chat_content.trimmed();
         QPair<QtId, QtId> q_pair(from_id, to_id);
         if(header == "SEND_MESSAGE"){
             sending_stream << header;
