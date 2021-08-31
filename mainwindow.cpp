@@ -15,6 +15,8 @@ ServerMainWindow::ServerMainWindow(QWidget *parent)
     ui->setupUi(this);
     TcpServerSingleton* tcp_server = TcpServerSingleton::get_instance();
     connect(tcp_server, SIGNAL(sig_get_ip_list(QHostInfo)), this, SLOT(slot_get_ip_list(QHostInfo)));
+    connect(tcp_server, SIGNAL(sig_online_increase(int)), this, SLOT(on_online_increase(int)));
+    connect(tcp_server, SIGNAL(sig_online_decrease(int)), this, SLOT(on_online_decrease(int)));
 //    需要请直接调用静态方法get_instance()，指针不作为MainWindow的成员
 
     setWindowFlag(Qt::FramelessWindowHint);
@@ -55,21 +57,6 @@ ServerMainWindow::~ServerMainWindow()
     delete ui;
 }
 
-QString ServerMainWindow::get_ip()
-{
-
-}
-
-QString ServerMainWindow::get_port()
-{
-    ;
-}
-
-void ServerMainWindow::update_online_list()
-{
-
-}
-
 void ServerMainWindow::add_backlog_list()
 {
 
@@ -94,13 +81,17 @@ void ServerMainWindow::on_openServerButton_clicked()
     instance->open_server(ui->comboBox->currentText(), ui->lineEdit_2->text());
 }
 
-void ServerMainWindow::on_online_increase()
+void ServerMainWindow::on_online_increase(int id)
 {
+    ui->listWidget->addItem(QString("%1").arg(id));
 }
 
-void ServerMainWindow::on_online_decrease()
+void ServerMainWindow::on_online_decrease(int id)
 {
-
+    QList<QListWidgetItem*> target = ui->listWidget->findItems(QString(id), 0);
+    for (int i = 0; i < target.count(); i++) {
+        ui->listWidget->removeItemWidget(target.at(i));
+    }
 }
 
 void ServerMainWindow::slot_get_ip_list(QHostInfo info)

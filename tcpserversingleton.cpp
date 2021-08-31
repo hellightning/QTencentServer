@@ -65,6 +65,7 @@ void TcpServerSingleton::close_socket(qintptr des)
         ServerTcpSocket* tmp_socket = socket_hash[des];
         delete tmp_socket;
         socket_hash.remove(des);
+        emit sig_online_decrease(des);
         qDebug() << "Socket(descriptor=" << des <<") closed.";
     }
 }
@@ -79,6 +80,7 @@ void TcpServerSingleton::close_socket(QtId qtid)
     }else{
         qDebug() << "Closing socket of client(QtId=" << qtid << ")...";
         close_socket(descriptor_hash[qtid]);
+        emit sig_online_decrease(qtid);
         qDebug() << "Socket of client(QtId=" << qtid << ") closed.";
     }
 }
@@ -153,6 +155,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
     }else{
         tmp_socket = socket_hash[description];
     }
+
+    qDebug()<<"qtid "<<description<<"connected";
+    emit sig_online_increase(description);
 
     qDebug() << "New client requests for connexion.";
     qDebug() << "Client Descriptor: " << tmp_socket->socketDescriptor();

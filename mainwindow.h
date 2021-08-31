@@ -16,9 +16,6 @@ class ServerMainWindow : public QMainWindow
 public:
     ServerMainWindow(QWidget *parent = nullptr);
     ~ServerMainWindow();
-    QString get_ip();
-    QString get_port();
-    void update_online_list();
     void add_backlog_list();
     void clean_backlog_list();
 
@@ -30,9 +27,9 @@ private slots:
 
     void on_openServerButton_clicked();
 
-    void on_online_increase();
+    void on_online_increase(int);
 
-    void on_online_decrease();
+    void on_online_decrease(int);
 
     void slot_get_ip_list(QHostInfo);
 private:

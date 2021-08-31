@@ -20,7 +20,6 @@ public:
     void close_socket(qintptr);
     void close_socket(QtId);
 
-protected:
     void incomingConnection(qintptr description);
 private:
     explicit TcpServerSingleton(QObject *parent = nullptr);
@@ -37,6 +36,8 @@ signals:
     void sig_send_message(int, const QByteArray);
     void sig_send_message(qintptr, QByteArray);
     void sig_get_ip_list(QHostInfo);
+    void sig_online_increase(int);
+    void sig_online_decrease(int);
 private slots:
     void slot_send_message(int, const QByteArray);
     void slot_send_message(qintptr, const QByteArray);
