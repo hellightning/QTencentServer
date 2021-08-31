@@ -256,7 +256,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             message_stream >> qtid;
             qDebug() << "Client(QtId=" << qtid << ") requests for friend list.";
             QList<QtId> friend_list;
-            QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, QList<QtId> friend_list){
+            auto fut_friend = QtConcurrent::run(QThreadPool::globalInstance(), [this, &friend_list](int qtid, qintptr des){
                 friend_list = (ServerSqlSingleton::get_instance()->select_friends(qtid));
                 // 发回报文头FRIEND_LIST，报文参数每行一个好友的qtid
                 // TODO：参数也包括每个好友的nickname
@@ -271,9 +271,11 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     feedback_stream << nickname;
                 }
                 emit sig_send_message(des, feedback);
-            }, qtid, des, friend_list);
+            }, qtid, des);
+            fut_friend.waitForFinished();
             if(friend_list.length() >= 0){
-                QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, const QList<QtId>& friend_list){
+                auto fut_send_offline = QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, const QList<QtId>& friend_list){
+                    qDebug() << friend_list;
                     for(auto item : friend_list){
                         QPair<QtId, QtId> q_pair(item, qtid);
                         if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
@@ -287,7 +289,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                                     t_stream << chat_content;
                                 }
                                 emit sig_send_message(des, t_feedback);
-                                delete[] t_message_list;
+                                delete t_message_list;
                                 message_cache_hash.remove(q_pair);
                             }
                         }
@@ -376,9 +378,9 @@ TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
 QString TcpServerSingleton::get_nickname(QtId qtid)
 {
     if(nickname_hash.find(qtid) != nickname_hash.end()){
-        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid){
+//        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid){
             nickname_hash[qtid] = ServerSqlSingleton::get_instance()->select_nickname(qtid);
-        }, qtid);
+//        }, qtid);
     }
     return nickname_hash[qtid];
 }
