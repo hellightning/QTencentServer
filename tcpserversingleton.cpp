@@ -65,7 +65,6 @@ void TcpServerSingleton::close_socket(qintptr des)
         ServerTcpSocket* tmp_socket = socket_hash[des];
         delete tmp_socket;
         socket_hash.remove(des);
-        emit sig_online_decrease(des);
         qDebug() << "Socket(descriptor=" << des <<") closed.";
     }
 }
@@ -157,9 +156,6 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         tmp_socket->setSocketDescriptor(description);
     }
 
-    qDebug()<<"qtid "<<description<<"connected";
-    emit sig_online_increase(description);
-
     qDebug() << "New client requests for connexion.";
     qDebug() << "Client Descriptor: " << tmp_socket->socketDescriptor();
     // 类图上的handler，用lambda处理
@@ -223,6 +219,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     feedback_stream << nickname;
                     qDebug() << nickname << "(QtId=" << qtid << ") signed in.";
                     descriptor_hash[qtid] = des;
+
+                    emit sig_online_increase(qtid);
                 }else{
                     feedback_stream << "SIGN_IN_FAILED";
                     qDebug() << "Client(QtId=" << qtid << ") failed to signing in.";
