@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>969</width>
-    <height>664</height>
+    <width>1040</width>
+    <height>712</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,6 +17,11 @@
    <string notr="true"/>
   </property>
   <widget class="QFrame" name="MainFrame">
+   <property name="styleSheet">
+    <string notr="true">QFrame{
+background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:0, y2:0, stop:0 rgba(64, 80, 255, 255), stop:1 rgba(64, 160, 255, 255))
+}</string>
+   </property>
    <property name="frameShape">
     <enum>QFrame::StyledPanel</enum>
    </property>
@@ -26,11 +31,16 @@
    <widget class="QWidget" name="centralwidget" native="true">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>951</width>
-      <height>601</height>
+      <x>20</x>
+      <y>100</y>
+      <width>1001</width>
+      <height>551</height>
      </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QWidget {
+    background-color: #fcfcfc;
+}</string>
     </property>
     <widget class="QGroupBox" name="groupBox">
      <property name="geometry">
@@ -42,10 +52,17 @@
       </rect>
      </property>
      <property name="styleSheet">
-      <string notr="true"/>
+      <string notr="true">QGroupBox {
+    background-color: #fff;
+    font-size: 20px;
+    margin-top: 3px;
+}</string>
      </property>
      <property name="title">
       <string>Server Setting</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
      </property>
      <widget class="QLabel" name="label">
       <property name="geometry">
@@ -186,22 +203,30 @@ QPushButton:pressed {
        <x>20</x>
        <y>270</y>
        <width>331</width>
-       <height>311</height>
+       <height>261</height>
       </rect>
      </property>
      <property name="styleSheet">
-      <string notr="true"/>
+      <string notr="true">QGroupBox {
+    background-color: #fff;
+    text-alignment: center;
+    font-size: 20px;
+    margin-top: 3px;
+}</string>
      </property>
      <property name="title">
       <string>Online Accounts</string>
      </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
      <widget class="QListWidget" name="listWidget">
       <property name="geometry">
        <rect>
-        <x>30</x>
-        <y>40</y>
-        <width>271</width>
-        <height>241</height>
+        <x>10</x>
+        <y>30</y>
+        <width>311</width>
+        <height>221</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -217,14 +242,26 @@ QPushButton:pressed {
        <x>390</x>
        <y>20</y>
        <width>541</width>
-       <height>561</height>
+       <height>511</height>
       </rect>
      </property>
+     <property name="font">
+      <font>
+       <pointsize>-1</pointsize>
+      </font>
+     </property>
      <property name="styleSheet">
-      <string notr="true"/>
+      <string notr="true">QGroupBox {
+    background-color: #fff;
+    font-size: 20px;
+    margin-top: 3px;
+}</string>
      </property>
      <property name="title">
       <string>Info</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
      </property>
      <widget class="QListWidget" name="listWidget_2">
       <property name="geometry">
@@ -232,11 +269,86 @@ QPushButton:pressed {
         <x>40</x>
         <y>40</y>
         <width>461</width>
-        <height>501</height>
+        <height>461</height>
        </rect>
       </property>
      </widget>
     </widget>
+   </widget>
+   <widget class="QLabel" name="QTencentIcon">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>-10</y>
+      <width>371</width>
+      <height>91</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+    font-size:  40px;
+    color: white;
+    opacity: 0;
+    font-weight: bold;
+    background: transparent;
+}</string>
+    </property>
+    <property name="text">
+     <string>QTencent</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="QTencentMsg">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>40</y>
+      <width>311</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QLabel {
+    font-size:  20px;
+    color: white;
+    opacity: 0;
+    font-weight: bold;
+    background: transparent;
+}</string>
+    </property>
+    <property name="text">
+     <string>网络无限，开拓不懈</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="CloseButton">
+    <property name="geometry">
+     <rect>
+      <x>977</x>
+      <y>0</y>
+      <width>61</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QPushButton {
+	border-image: url(:/resources/avator/close.png);
+}
+
+QPushButton:hover {
+    background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 rgba(255, 0, 0, 255), stop:1 rgba(255, 106, 0, 255));
+}</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="flat">
+     <bool>true</bool>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -244,7 +356,7 @@ QPushButton:pressed {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>969</width>
+     <width>1040</width>
      <height>21</height>
     </rect>
    </property>
