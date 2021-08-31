@@ -28,7 +28,7 @@ private slots:
     void on_online_increase(int);
     void on_online_decrease(int);
 
-    void add_backlog_list(QByteArray);//在info中的listWidget里显示消息
+    void add_backlog_list(QString);//在info中的listWidget里显示消息
     void slot_get_ip_list(QHostInfo);
 private:
     Ui::MainWindow *ui;
