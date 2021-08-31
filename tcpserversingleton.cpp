@@ -255,25 +255,25 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QtId qtid = -1;
             message_stream >> qtid;
             qDebug() << "Client(QtId=" << qtid << ") requests for friend list.";
-            QList<QtId>* friend_list;
-            QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, QList<QtId>* friend_list){
-                *friend_list = ServerSqlSingleton::get_instance()->select_friends(qtid);
+            QList<QtId> friend_list;
+            QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, QList<QtId> friend_list){
+                friend_list = (ServerSqlSingleton::get_instance()->select_friends(qtid));
                 // 发回报文头FRIEND_LIST，报文参数每行一个好友的qtid
                 // TODO：参数也包括每个好友的nickname
                 // 这个请求没有失败返回值，失败时好友列表为空
                 QByteArray feedback;
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
                 feedback_stream << "FRIEND_LIST";
-                feedback_stream << friend_list->length();
-                for(auto item : *friend_list){
+                feedback_stream << friend_list.length();
+                for(auto item : friend_list){
                     feedback_stream << item;
                     QByteArray nickname = ServerSqlSingleton::get_instance()->select_nickname(item).toUtf8();
                 }
                 emit sig_send_message(des, feedback);
             }, qtid, des, friend_list);
-            if(friend_list->length() >= 0){
-                QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, QList<QtId>* friend_list){
-                    for(auto item : *friend_list){
+            if(friend_list.length() >= 0){
+                QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, QList<QtId> friend_list){
+                    for(auto item : friend_list){
                         QPair<QtId, QtId> q_pair(item, qtid);
                         if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
                             QList<QByteArray>* t_message_list = message_cache_hash[q_pair];
