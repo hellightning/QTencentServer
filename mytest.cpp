@@ -15,7 +15,11 @@ void mytest::UiTest()
 {
     ServerMainWindow ui;
     ui.show();
-    TcpServerSingleton* server = TcpServerSingleton::get_instance();
+    for (int i=0;i<20000; i++) {
+        QString qs = QString("$%1").arg(i);
+        QByteArray qb = qs.toLatin1();
+        ui.add_backlog_list(qb);
+    }
     QTest::qWait(1000000);
 }
 

@@ -57,16 +57,21 @@ ServerMainWindow::~ServerMainWindow()
     delete ui;
 }
 
-void ServerMainWindow::add_backlog_list()
+void ServerMainWindow::add_backlog_list(QByteArray msg)
 {
-
+    QString tmp = msg;
+    ui->listWidget_2->addItem(tmp);
+    if (ui->listWidget_2->count() > 1000)
+        this->clean_backlog_list();
 }
 
 void ServerMainWindow::clean_backlog_list()
 {
-
+    for (int i=0; i<500; i++) {
+        QListWidgetItem* item = ui->listWidget_2->takeItem(0);
+        delete item;
+    }
 }
-
 
 void ServerMainWindow::on_closeServerButton_clicked()
 {

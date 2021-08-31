@@ -16,11 +16,11 @@ class ServerMainWindow : public QMainWindow
 public:
     ServerMainWindow(QWidget *parent = nullptr);
     ~ServerMainWindow();
-    void add_backlog_list();
-    void clean_backlog_list();
 
     virtual void paintEvent(QPaintEvent*);
 
+protected:
+    void clean_backlog_list();
 
 private slots:
     void on_closeServerButton_clicked();
@@ -28,6 +28,7 @@ private slots:
     void on_online_increase(int);
     void on_online_decrease(int);
 
+    void add_backlog_list(QByteArray);//在info中的listWidget里显示消息
     void slot_get_ip_list(QHostInfo);
 private:
     Ui::MainWindow *ui;
