@@ -154,6 +154,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         socket_hash[description] = tmp_socket;
     }else{
         tmp_socket = socket_hash[description];
+        tmp_socket->setSocketDescriptor(description);
     }
 
     qDebug()<<"qtid "<<description<<"connected";

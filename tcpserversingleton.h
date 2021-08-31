@@ -20,6 +20,7 @@ public:
     void close_socket(qintptr);
     void close_socket(QtId);
 
+protected:
     void incomingConnection(qintptr description);
 private:
     explicit TcpServerSingleton(QObject *parent = nullptr);

@@ -24,11 +24,8 @@ public:
 
 private slots:
     void on_closeServerButton_clicked();
-
     void on_openServerButton_clicked();
-
     void on_online_increase(int);
-
     void on_online_decrease(int);
 
     void slot_get_ip_list(QHostInfo);

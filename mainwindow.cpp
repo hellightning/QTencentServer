@@ -88,9 +88,11 @@ void ServerMainWindow::on_online_increase(int id)
 
 void ServerMainWindow::on_online_decrease(int id)
 {
-    QList<QListWidgetItem*> target = ui->listWidget->findItems(QString(id), 0);
-    for (int i = 0; i < target.count(); i++) {
-        ui->listWidget->removeItemWidget(target.at(i));
+    for (int i=0;i<ui->listWidget->count();i++) {
+        if (ui->listWidget->item(i)->text().toInt() == id) {
+            QListWidgetItem* item = ui->listWidget->takeItem(i);
+            delete item;
+        }
     }
 }
 
