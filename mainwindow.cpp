@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "servertcpsocket.h"
 
 #include <QGraphicsDropShadowEffect>
 #include <QPainter>
@@ -12,7 +13,10 @@ ServerMainWindow::ServerMainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-//    tcp_server = TcpServerSingleton::get_instance();
+    TcpServerSingleton* tcp_server = TcpServerSingleton::get_instance();
+    connect(tcp_server, SIGNAL(sig_get_ip_list(QHostInfo)), this, SLOT(slot_get_ip_list(QHostInfo)));
+    connect(tcp_server, SIGNAL(sig_online_increase(int)), this, SLOT(on_online_increase(int)));
+    connect(tcp_server, SIGNAL(sig_online_decrease(int)), this, SLOT(on_online_decrease(int)));
 //    需要请直接调用静态方法get_instance()，指针不作为MainWindow的成员
 
     setWindowFlag(Qt::FramelessWindowHint);
@@ -53,50 +57,57 @@ ServerMainWindow::~ServerMainWindow()
     delete ui;
 }
 
-QString ServerMainWindow::get_ip()
+void ServerMainWindow::add_backlog_list(QByteArray msg)
 {
-
-}
-
-QString ServerMainWindow::get_port()
-{
-    ;
-}
-
-void ServerMainWindow::update_online_list()
-{
-
-}
-
-void ServerMainWindow::add_backlog_list()
-{
-
+    QString tmp = msg;
+    ui->listWidget_2->addItem(tmp);
+    if (ui->listWidget_2->count() > 1000)
+        this->clean_backlog_list();
 }
 
 void ServerMainWindow::clean_backlog_list()
 {
-
+    for (int i=0; i<500; i++) {
+        QListWidgetItem* item = ui->listWidget_2->takeItem(0);
+        delete item;
+    }
 }
-
 
 void ServerMainWindow::on_closeServerButton_clicked()
 {
-
+    TcpServerSingleton* instance = TcpServerSingleton::get_instance();
+    instance->close_server();
 }
 
 
 void ServerMainWindow::on_openServerButton_clicked()
 {
-
+    TcpServerSingleton* instance = TcpServerSingleton::get_instance();
+    instance->open_server(ui->comboBox->currentText(), ui->lineEdit_2->text());
 }
 
-void ServerMainWindow::on_online_increase()
+void ServerMainWindow::on_online_increase(int id)
 {
-
+    ui->listWidget->addItem(QString("%1").arg(id));
 }
 
-void ServerMainWindow::on_online_decrease()
+void ServerMainWindow::on_online_decrease(int id)
 {
-
+    for (int i=0;i<ui->listWidget->count();i++) {
+        if (ui->listWidget->item(i)->text().toInt() == id) {
+            QListWidgetItem* item = ui->listWidget->takeItem(i);
+            delete item;
+        }
+    }
 }
 
+void ServerMainWindow::slot_get_ip_list(QHostInfo info)
+{
+    if (info.addresses().count() > 0) {
+        qDebug()<<info.addresses().count();
+        for (int i = 0; i < info.addresses().count(); i++) {
+            qDebug()<<info.addresses().at(i);
+            ui->comboBox->addItem(info.addresses().at(i).toString());
+        }
+    }
+}
