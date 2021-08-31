@@ -61,13 +61,13 @@ private:
      * @brief 查找昵称
      * @param qtid 查找对象的qtid
      */
-    QByteArray get_nickname(QtId qtid);
+    QString get_nickname(QtId qtid);
     static TcpServerSingleton* instance;                                // Server单例的指针，防止重复创建
     QString server_ip = "127.0.0.1";                                    // Server的ip地址，默认为本机回环地址
     QHash<qintptr, ServerTcpSocket*> socket_hash;                       // 从描述符到对应socket的hash
     QHash<QtId, qintptr> descriptor_hash;                               // 从QtId到对应描述符的hash
-    QHash<QtId, QByteArray> nickname_hash;                              // 从QtId到昵称的hash，加快查找速度
-    QHash<QPair<QtId, QtId> , QList<QByteArray>* > message_cache_hash;  // 从发送者到接收者QtId的QPair到对应离线消息的hash
+    QHash<QtId, QString> nickname_hash;                              // 从QtId到昵称的hash，加快查找速度
+    QHash<QPair<QtId, QtId> , QList<QString>* > message_cache_hash;  // 从发送者到接收者QtId的QPair到对应离线消息的hash
     QHostAddress hostaddr;                                              // host地址
     QHostInfo hostinfo;                                                 // host信息
 

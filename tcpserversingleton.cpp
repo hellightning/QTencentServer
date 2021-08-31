@@ -120,7 +120,7 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
             slot_send_message_qtid(from_id, sending);
         }
         if(message_cache_hash.find(q_pair) == message_cache_hash.end()){
-            message_cache_hash[q_pair] = new QList<QByteArray>();
+            message_cache_hash[q_pair] = new QList<QString>();
         }
         // 超出缓存上限则拒绝
         if(message_cache_hash[q_pair]->length() >= 50 or chat_content.startsWith("buzai, cnm")){
@@ -229,7 +229,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
                 if(ServerSqlSingleton::get_instance()->select_account(qtid, password)){
                     feedback_stream << "SIGN_IN_SUCCEED";
-                    QByteArray nickname = ServerSqlSingleton::get_instance()->select_nickname(qtid).toUtf8();
+                    QString nickname = ServerSqlSingleton::get_instance()->select_nickname(qtid).toUtf8();
                     feedback_stream << nickname;
                     descriptor_hash[qtid] = des;
                     qDebug() << nickname << "(QtId=" << qtid << ") signed in.";
@@ -267,7 +267,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 feedback_stream << friend_list.length();
                 for(auto item : friend_list){
                     feedback_stream << item;
-                    QByteArray nickname = ServerSqlSingleton::get_instance()->select_nickname(item).toUtf8();
+                    QString nickname = ServerSqlSingleton::get_instance()->select_nickname(item);
                     feedback_stream << nickname;
                 }
                 emit sig_send_message(des, feedback);
@@ -277,7 +277,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     for(auto item : friend_list){
                         QPair<QtId, QtId> q_pair(item, qtid);
                         if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
-                            QList<QByteArray>* t_message_list = message_cache_hash[q_pair];
+                            QList<QString>* t_message_list = message_cache_hash[q_pair];
                             if(t_message_list != nullptr and t_message_list->length() != 0){
                                 QByteArray t_feedback;
                                 QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
@@ -373,11 +373,11 @@ TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
     //    TcpServerSingleton::qtid_distributed = INIT_QTID + ServerSqlSingleton::account_number;
 }
 
-QByteArray TcpServerSingleton::get_nickname(QtId qtid)
+QString TcpServerSingleton::get_nickname(QtId qtid)
 {
     if(nickname_hash.find(qtid) != nickname_hash.end()){
         QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid){
-            nickname_hash[qtid] = ServerSqlSingleton::get_instance()->select_nickname(qtid).toUtf8();
+            nickname_hash[qtid] = ServerSqlSingleton::get_instance()->select_nickname(qtid);
         }, qtid);
     }
     return nickname_hash[qtid];
