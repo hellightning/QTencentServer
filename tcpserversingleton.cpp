@@ -387,7 +387,7 @@ TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
 
 QString TcpServerSingleton::get_nickname(QtId qtid)
 {
-    if(nickname_hash.find(qtid) != nickname_hash.end()){
+    if(nickname_hash.find(qtid) == nickname_hash.end()){
 //        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid){
             nickname_hash[qtid] = ServerSqlSingleton::get_instance()->select_nickname(qtid);
 //        }, qtid);
