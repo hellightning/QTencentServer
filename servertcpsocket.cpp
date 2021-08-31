@@ -8,6 +8,9 @@ ServerTcpSocket::ServerTcpSocket(QObject *parent) : QTcpSocket(parent)
         emit sig_readyRead(socketDescriptor(), message);
     });
     connect(this, &ServerTcpSocket::disconnected,[this](){
-        emit sig_disconnected(socketDescriptor());
+        emit sig_disconnected(des);
     });
+}
+void ServerTcpSocket::memorize_descriptor(qintptr t_des){
+    des = t_des;
 }

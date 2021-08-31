@@ -150,8 +150,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
     if(socket_hash.find(description) == socket_hash.end()){
         tmp_socket = new ServerTcpSocket();
         tmp_socket->setSocketDescriptor(description);
+        tmp_socket->memorize_descriptor(description);
         socket_hash[description] = tmp_socket;
-
     }else{
         tmp_socket = socket_hash[description];
     }
