@@ -40,6 +40,9 @@ void TcpServerSingleton::open_server(QString ip, QString port)
         qDebug() << "Server listening...";
         qDebug() << "Server ip: " << ip;
         qDebug() << "Server port: " + port;
+        emit sig_update_gui("Server starts listening.");
+        emit sig_update_gui("Server ip  : " + ip);
+        emit sig_update_gui("Server port: " + port);
     }
 }
 
@@ -50,8 +53,10 @@ void TcpServerSingleton::close_server()
      * 关闭当前监听的服务器
      */
     qDebug() << "Closing server...";
+    emit sig_update_gui("Closing server...");
     this->close();
     qDebug() << "Server closed.";
+    emit sig_update_gui("Server closed.");
 }
 
 void TcpServerSingleton::close_socket(qintptr des)
@@ -74,6 +79,8 @@ void TcpServerSingleton::close_socket(QtId qtid)
     /*
      * 给定qtid,关闭对应的socket
      */
+    emit sig_update_gui(QString(get_nickname(qtid) + "(QtId=%1) is now offline.").arg(qtid));
+    emit sig_online_decrease(qtid);
     if(descriptor_hash.find(qtid) == descriptor_hash.end()){
         qDebug() << "Client(QtId=" << qtid << ") is offline, need not to close.";
     }else{
@@ -102,6 +109,7 @@ void TcpServerSingleton::slot_send_message(int qtid, const QByteArray message)
         QDataStream receiving_stream(&receiving, QIODevice::ReadOnly);
         QDataStream sending_stream(&sending, QIODevice::WriteOnly);
         receiving_stream >> header >> from_id >> to_id >> chat_content;
+        emit sig_update_gui(get_nickname(from_id) + " send to " + get_nickname(to_id) + ": " + chat_content);
         chat_content = chat_content.trimmed();
         QPair<QtId, QtId> q_pair(from_id, to_id);
         if(header == "SEND_MESSAGE"){
@@ -115,7 +123,7 @@ void TcpServerSingleton::slot_send_message(int qtid, const QByteArray message)
             message_cache_hash[q_pair] = new QList<QByteArray>();
         }
         // 超出缓存上限则拒绝
-        if(message_cache_hash[q_pair]->length() >= 50){
+        if(message_cache_hash[q_pair]->length() >= 50 or chat_content.startsWith("buzai, cnm")){
             qDebug() << "Store request refused.";
         }else{
             message_cache_hash[q_pair]->append(chat_content);
@@ -145,6 +153,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
      * 有新连接时调用
      * 获取或实例化socket，根据读取的信息进行对应的操作
      */
+    emit sig_update_gui("New client requests for connect.");
     ServerTcpSocket* tmp_socket = nullptr;
     if(socket_hash.find(description) == socket_hash.end()){
         tmp_socket = new ServerTcpSocket();
@@ -155,7 +164,6 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         tmp_socket = socket_hash[description];
         tmp_socket->setSocketDescriptor(description);
     }
-
     qDebug() << "New client requests for connexion.";
     qDebug() << "Client Descriptor: " << tmp_socket->socketDescriptor();
     // 类图上的handler，用lambda处理
@@ -168,16 +176,18 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         qDebug() << "Header is: " << header;
         if(header.startsWith("REGISTER")){
             qDebug() << "New user requests for registering.";
+            emit sig_update_gui("New client requests for registering.");
             // 报文参数：昵称，密码
             QByteArray nickname;
             QByteArray password;
             message_stream >> nickname >> password;
             nickname = nickname.trimmed();
             password = password.trimmed();
-            if(nickname.length() == 0 or password.length() == 0){
+            if(nickname.length() == 0 or password.length() <= 4){
                 QByteArray feedback;
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
                 qDebug() << "New user's register failed.";
+                emit sig_update_gui("Client(nickname=" + nickname + ") register failed.");
                 feedback_stream << "REGISTER_FAILED";
                 // 使用std::future中的async结合lambda，进行异步并发发送消息，下同
                 QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray feedback){
@@ -199,6 +209,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                         feedback_stream << "REGISTER_FAILED";
                     }
                     emit sig_send_message(des, feedback);
+                    emit sig_update_gui(QString(nickname+"(QtId=%1) register succeed.").arg(returned_qtid));
                 }, nickname, password, des);
             }
             // send_message(des, feedback);
@@ -217,10 +228,11 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     feedback_stream << "SIGN_IN_SUCCEED";
                     QByteArray nickname = ServerSqlSingleton::get_instance()->select_nickname(qtid).toUtf8();
                     feedback_stream << nickname;
-                    qDebug() << nickname << "(QtId=" << qtid << ") signed in.";
                     descriptor_hash[qtid] = des;
-
+                    qDebug() << nickname << "(QtId=" << qtid << ") signed in.";
+                    nickname_hash[qtid] = nickname;
                     emit sig_online_increase(qtid);
+                    emit sig_update_gui(QString(nickname + "(QtId=%1) is now online.").arg(qtid));
                 }else{
                     feedback_stream << "SIGN_IN_FAILED";
                     qDebug() << "Client(QtId=" << qtid << ") failed to signing in.";
@@ -285,6 +297,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     feedback_stream << "ADD_FFIEND_FAILED";
                 }
                 emit sig_send_message(des, feedback);
+                emit sig_update_gui(nickname_hash[from_id] + " add " + nickname_hash[to_id] + " as new friend.");
             }, from_id, to_id, des);
         }else if(header.startsWith("SEND_MESSAGE")){
             // 报文参数：发送者id，发送对象id，发送内容
@@ -342,5 +355,15 @@ TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
     }
     connect(this, SIGNAL(sig_send_message(qintptr, const QByteArray)),
             this, SLOT(slot_send_message(qintptr, const QByteArray)));
-//    TcpServerSingleton::qtid_distributed = INIT_QTID + ServerSqlSingleton::account_number;
+    //    TcpServerSingleton::qtid_distributed = INIT_QTID + ServerSqlSingleton::account_number;
+}
+
+QByteArray TcpServerSingleton::get_nickname(QtId qtid)
+{
+    if(nickname_hash.find(qtid) != nickname_hash.end()){
+        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid){
+            nickname_hash[qtid] = ServerSqlSingleton::get_instance()->select_nickname(qtid).toUtf8();
+        }, qtid);
+    }
+    return nickname_hash[qtid];
 }

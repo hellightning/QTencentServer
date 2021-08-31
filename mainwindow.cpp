@@ -18,6 +18,7 @@ ServerMainWindow::ServerMainWindow(QWidget *parent)
     connect(tcp_server, SIGNAL(sig_get_ip_list(QHostInfo)), this, SLOT(slot_get_ip_list(QHostInfo)));
     connect(tcp_server, SIGNAL(sig_online_increase(int)), this, SLOT(on_online_increase(int)));
     connect(tcp_server, SIGNAL(sig_online_decrease(int)), this, SLOT(on_online_decrease(int)));
+    connect(tcp_server, SIGNAL(sig_update_gui(QString)), this, SLOT(add_backlog_list(QString)));
 //    需要请直接调用静态方法get_instance()，指针不作为MainWindow的成员
     setAcceptDrops(true);
     setWindowFlag(Qt::FramelessWindowHint);
@@ -64,10 +65,10 @@ ServerMainWindow::~ServerMainWindow()
     delete ui;
 }
 
-void ServerMainWindow::add_backlog_list(QByteArray msg)
+void ServerMainWindow::add_backlog_list(QString msg)
 {
-    QString tmp = msg;
-    ui->listWidget_2->addItem(tmp);
+
+    ui->listWidget_2->addItem(msg);
     if (ui->listWidget_2->count() > 1000)
         this->clean_backlog_list();
 }
