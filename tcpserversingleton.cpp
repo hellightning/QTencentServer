@@ -220,6 +220,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             message_stream >> qtid >> password;
             password = password.trimmed();
             qDebug() << "Client(QtId=" << qtid << ") requests for signing in.";
+            if(socket_hash.find(des) != socket_hash.end()){
+                socket_hash[des]->memorize_qtid(qtid);
+            }
             // 根据成功与否发回回应报文
             QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, QByteArray password, qintptr des){
                 QByteArray feedback;
@@ -335,7 +338,10 @@ void TcpServerSingleton::incomingConnection(qintptr description)
     });
 
     //
-    connect(tmp_socket, &ServerTcpSocket::sig_disconnected, [this](qintptr qtid){
+    connect(tmp_socket, &ServerTcpSocket::sig_disconnected_des, [this](qintptr des){
+        close_socket(des);
+    });
+    connect(tmp_socket, &ServerTcpSocket::sig_disconnected_qtid, [this](QtId qtid){
         close_socket(qtid);
     });
     // 客户端异常关闭时，可能不发送disconnected信号，这个时候会出现错误

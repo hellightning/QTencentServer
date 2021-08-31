@@ -9,11 +9,14 @@ class ServerTcpSocket : public QTcpSocket
 public:
     explicit ServerTcpSocket(QObject *parent = nullptr);
     void memorize_descriptor(qintptr);
+    void memorize_qtid(int);
 protected:
 private:
     qintptr des = -1;
+    int qtid = -1;
 signals:
-    void sig_disconnected(int);
+    void sig_disconnected_qtid(int);
+    void sig_disconnected_des(qintptr);
     void sig_readyRead(qintptr, QByteArray);
 };
 

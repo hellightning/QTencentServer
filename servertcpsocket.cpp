@@ -8,9 +8,17 @@ ServerTcpSocket::ServerTcpSocket(QObject *parent) : QTcpSocket(parent)
         emit sig_readyRead(socketDescriptor(), message);
     });
     connect(this, &ServerTcpSocket::disconnected,[this](){
-        emit sig_disconnected(des);
+        if(qtid == -1){
+            emit sig_disconnected_des(des);
+        }else{
+            emit sig_disconnected_qtid(qtid);
+        }
     });
 }
 void ServerTcpSocket::memorize_descriptor(qintptr t_des){
     des = t_des;
+}
+
+void ServerTcpSocket::memorize_qtid(int t_id){
+    qtid = t_id;
 }
