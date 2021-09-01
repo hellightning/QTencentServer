@@ -8,6 +8,9 @@ ServerTcpSocket::ServerTcpSocket(QObject *parent) : QTcpSocket(parent)
         emit sig_readyRead(socketDescriptor(), message);
     });
     connect(this, &ServerTcpSocket::disconnected,[this](){
+        if(state() != QAbstractSocket::UnconnectedState){
+            return;
+        }
         qDebug() << qtid;
         if(qtid == -1){
             qDebug() << "NOT SIGNED IN";

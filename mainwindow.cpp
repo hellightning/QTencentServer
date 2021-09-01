@@ -101,7 +101,15 @@ void ServerMainWindow::on_openServerButton_clicked()
 
 void ServerMainWindow::on_online_increase(int id)
 {
-    ui->listWidget->addItem(QString("%1").arg(id));
+    bool flag = true;
+    for (int i=0;i<ui->listWidget->count();i++) {
+        if (ui->listWidget->item(i)->text().toInt() == id) {
+            flag = false;
+            break;
+        }
+    }
+    if (flag)
+        ui->listWidget->addItem(QString("%1").arg(id));
 }
 
 void ServerMainWindow::on_online_decrease(int id)
