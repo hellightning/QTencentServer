@@ -7,6 +7,7 @@
 #include <QTcpServer>
 #include <QHostAddress>
 #include <QHostInfo>
+#include <QTimerEvent>
 #include "servertcpsocket.h"
 #include "serversqlsingleton.h"
 
@@ -51,6 +52,7 @@ protected:
      * @param des 描述符
      */
     void incomingConnection(qintptr description);
+    virtual void timerEvent(QTimerEvent* e);
 private:
     /**
      * @brief 根据给定的socketDescriptor，关闭对应连接的套接字
@@ -66,10 +68,13 @@ private:
     QString server_ip = "127.0.0.1";                                    // Server的ip地址，默认为本机回环地址
     QHash<qintptr, ServerTcpSocket*> socket_hash;                       // 从描述符到对应socket的hash
     QHash<QtId, qintptr> descriptor_hash;                               // 从QtId到对应描述符的hash
-    QHash<QtId, QString> nickname_hash;                              // 从QtId到昵称的hash，加快查找速度
-    QHash<QPair<QtId, QtId> , QList<QString>* > message_cache_hash;  // 从发送者到接收者QtId的QPair到对应离线消息的hash
+    QHash<QtId, QString> nickname_hash;                                 // 从QtId到昵称的hash，加快查找速度
+    QHash<QtId, quint16> heart_hash;                                    // 记录当前用户心跳包状态的hash
+    QHash<QPair<QtId, QtId> , QList<QString>* > message_cache_hash;     // 从发送者到接收者QtId的QPair到对应离线消息的hash
+    QSet<QtId> online_set;                                              // 记录在线客户端的id
     QHostAddress hostaddr;                                              // host地址
     QHostInfo hostinfo;                                                 // host信息
+    int heart_timer;
 
 signals:
     /**
