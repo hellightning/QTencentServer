@@ -18,13 +18,15 @@ void ServerSocketThread::write(QByteArray message){
 
 void ServerSocketThread::memorize_qtid(int qtid)
 {
+    qDebug() << qtid;
     m_qtid = qtid;
+    tcp_socket->memorize_qtid(qtid);
 }
 
 void ServerSocketThread::memorize_descriptor(qintptr des)
 {
     m_des = des;
-    tcp_socket->setSocketDescriptor(des);
+    tcp_socket->memorize_descriptor(des);
 }
 
 void ServerSocketThread::close(){
@@ -45,12 +47,12 @@ void ServerSocketThread::run(){
 
 void ServerSocketThread::slot_disconnected_qtid(int qtid)
 {
-    emit ServerSocketThread::sig_disconnected_qtid(qtid);
+    emit ServerSocketThread::sig_disconnected_qtid(m_qtid);
 }
 
 void ServerSocketThread::slot_disconnected_des(qintptr des)
 {
-    emit ServerSocketThread::slot_disconnected_des(des);
+    emit ServerSocketThread::sig_disconnected_des(m_des);
 }
 
 void ServerSocketThread::slot_readyRead(qintptr des, QByteArray message)

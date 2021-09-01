@@ -68,11 +68,17 @@ void TcpServerSingleton::close_socket(qintptr des)
     if(socket_hash.find(des) == socket_hash.end()){
         qDebug() << "Socket(descriptor=" << des <<") not found.";
     }else{
+        qDebug() << 1;
         ServerSocketThread* tmp_socket = socket_hash[des];
+        qDebug() << 2;
         tmp_socket->close();
+        qDebug() << 3;
         tmp_socket->quit();
+        qDebug() << 4;
         tmp_socket->wait();
+        qDebug() << 5;
         delete tmp_socket;
+        qDebug() << 6;
         socket_hash.remove(des);
         qDebug() << "Socket(descriptor=" << des <<") closed.";
     }
@@ -83,6 +89,7 @@ void TcpServerSingleton::close_socket(QtId qtid)
     /*
      * 给定qtid,关闭对应的socket
      */
+    qDebug() << 0;
     emit sig_update_gui(QString(get_nickname(qtid) + "(QtId=%1) is now offline.").arg(qtid));
     emit sig_online_decrease(qtid);
     online_set.remove(qtid);
