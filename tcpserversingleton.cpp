@@ -127,7 +127,7 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
             sending_stream << header;
             sending_stream << to_id;
             sending_stream << from_id;
-            sending_stream << "buzai, cnm";
+            sending_stream << QString("%1:%2 buzai,cnm").arg(QTime::currentTime().hour()).arg(QTime::currentTime().minute());
             qDebug() << "buzai...";
             emit sig_send_message(from_id, sending);
         }
