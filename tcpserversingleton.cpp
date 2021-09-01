@@ -55,6 +55,15 @@ void TcpServerSingleton::close_server()
      */
     qDebug() << "Closing server...";
     emit sig_update_gui("Closing server...");
+    descriptor_hash.clear();
+    socket_hash.clear();
+    nickname_hash.clear();
+    heart_hash.clear();
+    for(auto item : online_set){
+        qDebug() << item;
+        emit sig_online_decrease(item);
+    }
+    online_set.clear();
     this->close();
     qDebug() << "Server closed.";
     emit sig_update_gui("Server closed.");
@@ -68,17 +77,11 @@ void TcpServerSingleton::close_socket(qintptr des)
     if(socket_hash.find(des) == socket_hash.end()){
         qDebug() << "Socket(descriptor=" << des <<") not found.";
     }else{
-        qDebug() << 1;
         ServerSocketThread* tmp_socket = socket_hash[des];
-        qDebug() << 2;
-        tmp_socket->close();
-        qDebug() << 3;
+//        tmp_socket->close();
         tmp_socket->quit();
-        qDebug() << 4;
         tmp_socket->wait();
-        qDebug() << 5;
         delete tmp_socket;
-        qDebug() << 6;
         socket_hash.remove(des);
         qDebug() << "Socket(descriptor=" << des <<") closed.";
     }
@@ -190,7 +193,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         QDataStream message_stream(&message, QIODevice::ReadOnly);
         QByteArray header;
         message_stream >> header;
-        qDebug() << "Header is: " << header;
+        qDebug() << "Received Message: " << message;
         if(header.startsWith("REGISTER")){
             qDebug() << "New user requests for registering.";
             emit sig_update_gui("New client requests for registering.");
@@ -265,6 +268,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             if(suc){
                 if(socket_hash.find(des) != socket_hash.end()){
                     socket_hash[des]->memorize_qtid(qtid);
+                    online_set.insert(qtid);
                 }
             }
         }else if(header.startsWith("GET_FRIEND_LIST")){
@@ -344,7 +348,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QString file_name;
             QByteArray file_byte;
             message_stream >> from_id >> to_id >> file_size >> file_type >> file_name >> file_byte;
-            if((unsigned long long)file_byte.size() >= (1<<31) * sizeof(qint64)){
+            qDebug() << file_size << " " << static_cast<quint64>(1<<31);
+            if((unsigned long long)file_byte.size() >= static_cast<quint64>(1<<31) * sizeof(qint64)){
                 qDebug() << "Client(QtId=" << from_id << ") try to send large file.";
                 QByteArray large_feedback;
                 QDataStream l_stream(&large_feedback, QIODevice::WriteOnly);
@@ -395,8 +400,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray feedback){
                 emit sig_send_message(des, feedback);
             }, des, feedback);
-        }else if(header.startsWith("HEARTBEAT")){
-            emit sig_send_message(des, QByteArray("HEARTBREAK"));
+        }else if(header.startsWith("HEART_BEAT")){
+            emit sig_send_message(des, QByteArray("HEART_BREAK"));
             QtId qtid;
             message_stream >> qtid;
             if(heart_hash.find(qtid) == heart_hash.end()){
@@ -443,11 +448,13 @@ QString TcpServerSingleton::get_nickname(QtId qtid)
 void TcpServerSingleton::timerEvent(QTimerEvent *e)
 {
     if(e->timerId() == heart_timer){
+        QList<int> lst;
         for(auto item : online_set){
             if(descriptor_hash.find(item) == descriptor_hash.end()
                     or heart_hash.find(item) == heart_hash.end()
                     or heart_hash[item] >= 3){
-                online_set.remove(item);
+//                online_set.remove(item);
+                lst.append(item);
                 emit sig_update_gui(get_nickname(item) + "is now offline.");
                 if(descriptor_hash.find(item) != descriptor_hash.end()){
                     close_socket(descriptor_hash[item]);
@@ -455,6 +462,9 @@ void TcpServerSingleton::timerEvent(QTimerEvent *e)
             }else{
                 heart_hash[item] = heart_hash[item]+1;
             }
+        }
+        for (auto s : lst) {
+            online_set.remove(s);
         }
     }
 }
