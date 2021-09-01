@@ -82,6 +82,8 @@ void TcpServerSingleton::close_socket(QtId qtid)
      */
     emit sig_update_gui(QString(get_nickname(qtid) + "(QtId=%1) is now offline.").arg(qtid));
     emit sig_online_decrease(qtid);
+    online_set.remove(qtid);
+    heart_hash.remove(qtid);
     if(descriptor_hash.find(qtid) == descriptor_hash.end()){
         qDebug() << "Client(QtId=" << qtid << ") is offline, need not to close.";
     }else{
@@ -132,10 +134,10 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
         }
     }else{
         qDebug() << "Sending message...";
-        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid, QByteArray message){
+//        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid, QByteArray message){
             ServerTcpSocket* tmp_socket = socket_hash[descriptor_hash[qtid]];
             tmp_socket->write(message);
-        }, qtid, message);
+//        }, qtid, message);
         qDebug() << "Sent message:" << message;
     }
 }
@@ -145,10 +147,10 @@ void TcpServerSingleton::slot_send_message_des(qintptr des, const QByteArray mes
      * 服务器向指定descriptor对应的socket发送message
      */
     qDebug() << "Sending message: " << message;
-    QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray message){
+//    QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray message){
         ServerTcpSocket* tmp_socket = socket_hash[des];
         tmp_socket->write(message);
-    },des, message);
+//    },des, message);
     qDebug() << "Sent message:" << message;
 }
 
@@ -170,7 +172,6 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         tmp_socket->setSocketDescriptor(description);
     }
     qDebug() << "New client requests for connexion.";
-    qDebug() << "Client Descriptor: " << tmp_socket->socketDescriptor();
     // 类图上的handler，用lambda处理
     connect(tmp_socket, &ServerTcpSocket::sig_readyRead, [this](qintptr des, QByteArray message){
         // 用换行符/n拆分消息
@@ -241,6 +242,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     nickname_hash[qtid] = nickname;
                     emit sig_online_increase(qtid);
                     emit sig_update_gui(QString(nickname + "(QtId=%1) is now online.").arg(qtid));
+                    online_set.insert(qtid);
+                    heart_hash[qtid] = 0;
                     state = true;
                 }else{
                     feedback_stream << "SIGN_IN_FAILED";
@@ -284,32 +287,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                             feedback_stream << item;
                        }
                     }
-                emit sig_send_message(des, feedback);
                 }
+                emit sig_send_message(des, feedback);
             }, qtid, des);
-//            if(friend_list.length() >= 0){
-//                auto fut_send_offline = QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, const QList<QtId>& friend_list){
-//                    qDebug() << friend_list;
-//                    for(auto item : friend_list){
-//                        QPair<QtId, QtId> q_pair(item, qtid);
-//                        if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
-//                            QList<QString>* t_message_list = message_cache_hash[q_pair];
-//                            if(t_message_list != nullptr and t_message_list->length() != 0){
-//                                QByteArray t_feedback;
-//                                QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
-//                                t_stream << "SEND_MESSAGE";
-//                                t_stream << item << qtid;
-//                                for(auto chat_content : *t_message_list){
-//                                    t_stream << chat_content;
-//                                }
-//                                emit sig_send_message(des, t_feedback);
-//                                delete t_message_list;
-//                                message_cache_hash.remove(q_pair);
-//                            }
-//                        }
-//                    }
-//                }, qtid, des, friend_list);
-//            }
         }else if(header.startsWith("ADD_FRIEND")){
             // 报文参数：请求者id，目标id
             int from_id;
@@ -322,6 +302,13 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 if(ServerSqlSingleton::get_instance()->insert_friend(from_id, to_id)){
                     qDebug() << instance->get_nickname(to_id);
                     feedback_stream << "ADD_FRIEND_SUCCEED" << to_id << instance->get_nickname(to_id);
+
+                    if(descriptor_hash.find(to_id) != descriptor_hash.end()){
+                        QByteArray t_feedback;
+                        QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
+                        t_stream << "ADD_FRIEND_SUCCEED" << from_id << instance->get_nickname(from_id);
+                        emit sig_send_message(descriptor_hash[to_id], t_feedback);
+                    }
                 }else{
                     feedback_stream << "ADD_FFIEND_FAILED";
                 }
@@ -340,7 +327,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 emit sig_send_message(to_id, feedback);
             }, to_id, message);
         }else if(header.startsWith("SEND_FILE")){
-            // 报文参数：发送者id，发送对象id，文件大小，文件size，发送文件
+            // 报文参数：发送者id，发送对象id，文件大小，文件类型（后缀名），文件名称，文件数据
             int from_id;
             int to_id;
             unsigned long long file_size;
@@ -371,7 +358,6 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 // TODO: 从db获取群号对应的群员名单
                 auto group_list = QList<QtId>();//ServerSqlSingleton::get_instance()->select_grouper(group_id);
                 for(auto item : group_list){
-
                     if(item != from_id){
                         QByteArray feedback;
                         QDataStream f_stream(&feedback, QIODevice::WriteOnly);
@@ -399,6 +385,17 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray feedback){
                 emit sig_send_message(des, feedback);
             }, des, feedback);
+        }else if(header.startsWith("HEARTBEAT")){
+            emit sig_send_message(des, QByteArray("HEARTBREAK"));
+            QtId qtid;
+            message_stream >> qtid;
+            if(heart_hash.find(qtid) == heart_hash.end()){
+                heart_hash[qtid] = 0;
+            }else if(heart_hash[qtid] >= 3){
+                heart_hash[qtid] = 2;
+            }else if(heart_hash[qtid] > 0){
+                heart_hash[qtid] = heart_hash[qtid]-1;
+            }
         }
     });
 
@@ -427,6 +424,7 @@ TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
     connect(this, SIGNAL(sig_send_message(qintptr, const QByteArray)),
             this, SLOT(slot_send_message_des(qintptr, const QByteArray)));
     //    TcpServerSingleton::qtid_distributed = INIT_QTID + ServerSqlSingleton::account_number;
+    heart_timer = startTimer(10000);
 }
 
 QString TcpServerSingleton::get_nickname(QtId qtid)
@@ -437,4 +435,19 @@ QString TcpServerSingleton::get_nickname(QtId qtid)
 //        }, qtid);
     }
     return nickname_hash[qtid];
+}
+
+void TcpServerSingleton::timerEvent(QTimerEvent *e)
+{
+    if(e->timerId() == heart_timer){
+        for(auto item : online_set){
+            if(descriptor_hash.find(item) == descriptor_hash.end()
+                    or heart_hash.find(item) == heart_hash.end()
+                    or heart_hash[item] >= 3){
+                online_set.remove(item);
+            }else{
+                heart_hash[item] = heart_hash[item]+1;
+            }
+        }
+    }
 }

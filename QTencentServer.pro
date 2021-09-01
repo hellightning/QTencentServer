@@ -13,6 +13,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     mytest.cpp \
+    serversocketthread.cpp \
     serversqlsingleton.cpp \
     servertcpsocket.cpp \
     tcpserversingleton.cpp
@@ -20,6 +21,7 @@ SOURCES += \
 HEADERS += \
     mainwindow.h \
     mytest.h \
+    serversocketthread.h \
     serversqlsingleton.h \
     servertcpsocket.h \
     tcpserversingleton.h
