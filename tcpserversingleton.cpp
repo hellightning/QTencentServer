@@ -108,6 +108,7 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
      * 服务器向指定qtid发送message
      * 一般是转发消息
      */
+    qDebug() << "Send message to " << qtid;
     auto des = descriptor_hash.find(qtid);
     if(des == descriptor_hash.end()
             or (des != descriptor_hash.end()
@@ -312,12 +313,11 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     qDebug() << instance->get_nickname(to_id);
                     feedback_stream << "ADD_FRIEND_SUCCEED" << to_id << instance->get_nickname(to_id);
                     emit sig_update_gui(get_nickname(from_id) + " add " + get_nickname(to_id) + " as new friend.");
-
                     if(descriptor_hash.find(to_id) != descriptor_hash.end()){
                         QByteArray t_feedback;
                         QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
                         t_stream << "ADD_FRIEND_SUCCEED" << from_id << instance->get_nickname(from_id);
-                        emit sig_send_message(descriptor_hash[from_id], t_feedback);
+                        emit sig_send_message(descriptor_hash[to_id], t_feedback);
                     }
                 }else{
                     feedback_stream << "ADD_FFIEND_FAILED";
@@ -344,7 +344,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QString file_name;
             QByteArray file_byte;
             message_stream >> from_id >> to_id >> file_size >> file_type >> file_name >> file_byte;
-            if((unsigned long long)file_byte.size() >= (1<<8) * sizeof(qint64)){
+            if((unsigned long long)file_byte.size() >= (1<<31) * sizeof(qint64)){
                 qDebug() << "Client(QtId=" << from_id << ") try to send large file.";
                 QByteArray large_feedback;
                 QDataStream l_stream(&large_feedback, QIODevice::WriteOnly);
