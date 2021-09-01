@@ -24,10 +24,6 @@ public:
      */
     ~ServerMainWindow();
 
-    /**
-     * @brief paintEvent 绘制画布
-     */
-    virtual void paintEvent(QPaintEvent*);
 
 protected:
     /**
