@@ -335,7 +335,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 emit sig_send_message(to_id, feedback);
             }, to_id, message);
         }else if(header.startsWith("SEND_FILE")){
-            // 报文参数：发送者id，发送对象id，文件大小，文件size，发送文件
+            // 报文参数：发送者id，发送对象id，文件大小，文件类型（后缀名），文件名称，文件数据
             int from_id;
             int to_id;
             unsigned long long file_size;
@@ -394,6 +394,17 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray feedback){
                 emit sig_send_message(des, feedback);
             }, des, feedback);
+        }else if(header.startsWith("HEARTBEAT")){
+            emit sig_send_message(des, QByteArray("HEARTBREAK"));
+            QtId qtid;
+            message_stream >> qtid;
+            if(heart_hash.find(qtid) == heart_hash.end()){
+                heart_hash[qtid] = 0;
+            }else if(heart_hash[qtid] >= 3){
+                heart_hash[qtid] = 2;
+            }else if(heart_hash[qtid] > 0){
+                heart_hash[qtid] = heart_hash[qtid]-1;
+            }
         }
     });
 
@@ -417,6 +428,7 @@ TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
     connect(this, SIGNAL(sig_send_message(qintptr, const QByteArray)),
             this, SLOT(slot_send_message_des(qintptr, const QByteArray)));
     //    TcpServerSingleton::qtid_distributed = INIT_QTID + ServerSqlSingleton::account_number;
+    heart_timer = startTimer(10000);
 }
 
 QString TcpServerSingleton::get_nickname(QtId qtid)
