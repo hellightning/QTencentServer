@@ -68,8 +68,11 @@ void TcpServerSingleton::close_socket(qintptr des)
     if(socket_hash.find(des) == socket_hash.end()){
         qDebug() << "Socket(descriptor=" << des <<") not found.";
     }else{
-        ServerTcpSocket* tmp_socket = socket_hash[des];
-        tmp_socket->deleteLater();
+        ServerSocketThread* tmp_socket = socket_hash[des];
+        tmp_socket->close();
+        tmp_socket->quit();
+        tmp_socket->wait();
+        delete tmp_socket;
         socket_hash.remove(des);
         qDebug() << "Socket(descriptor=" << des <<") closed.";
     }
@@ -115,7 +118,7 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
         receiving_stream >> header >> from_id >> to_id >> chat_content;
         emit sig_update_gui(get_nickname(from_id) + " send to " + get_nickname(to_id) + ": " + chat_content);
         QPair<QtId, QtId> q_pair(from_id, to_id);
-        if(header == "SEND_MESSAGE"){
+        if(header == "SEND_MESSAGE" or header == "SEND_FILE"){
             sending_stream << header;
             sending_stream << to_id;
             sending_stream << from_id;
@@ -126,7 +129,7 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
             message_cache_hash[q_pair] = new QList<QString>();
         }
         // 超出缓存上限则拒绝
-        if(message_cache_hash[q_pair]->length() >= 50 or chat_content.startsWith("buzai, cnm")){
+        if(message_cache_hash[q_pair]->length() >= 50 or chat_content.startsWith("buzai, cnm") or header == "SEND_FILE"){
             qDebug() << "Store request refused.";
         }else{
             message_cache_hash[q_pair]->append(chat_content);
@@ -135,7 +138,7 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
     }else{
         qDebug() << "Sending message...";
 //        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid, QByteArray message){
-            ServerTcpSocket* tmp_socket = socket_hash[descriptor_hash[qtid]];
+            ServerSocketThread* tmp_socket = socket_hash[descriptor_hash[qtid]];
             tmp_socket->write(message);
 //        }, qtid, message);
         qDebug() << "Sent message:" << message;
@@ -148,7 +151,7 @@ void TcpServerSingleton::slot_send_message_des(qintptr des, const QByteArray mes
      */
     qDebug() << "Sending message: " << message;
 //    QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray message){
-        ServerTcpSocket* tmp_socket = socket_hash[des];
+        ServerSocketThread* tmp_socket = socket_hash[des];
         tmp_socket->write(message);
 //    },des, message);
     qDebug() << "Sent message:" << message;
@@ -161,19 +164,19 @@ void TcpServerSingleton::incomingConnection(qintptr description)
      * 获取或实例化socket，根据读取的信息进行对应的操作
      */
     emit sig_update_gui("New client requests for connect.");
-    ServerTcpSocket* tmp_socket = nullptr;
+    ServerSocketThread* tmp_socket = nullptr;
     if(socket_hash.find(description) == socket_hash.end()){
-        tmp_socket = new ServerTcpSocket();
-        tmp_socket->setSocketDescriptor(description);
+        tmp_socket = new ServerSocketThread();
+        tmp_socket->start();
         tmp_socket->memorize_descriptor(description);
         socket_hash[description] = tmp_socket;
     }else{
         tmp_socket = socket_hash[description];
-        tmp_socket->setSocketDescriptor(description);
+        tmp_socket->memorize_descriptor(description);
     }
     qDebug() << "New client requests for connexion.";
     // 类图上的handler，用lambda处理
-    connect(tmp_socket, &ServerTcpSocket::sig_readyRead, [this](qintptr des, QByteArray message){
+    connect(tmp_socket, &ServerSocketThread::sig_readyRead, [this](qintptr des, QByteArray message){
         // 用换行符/n拆分消息
         // 第一行为报文头，根据报文头进行不同操作
         QDataStream message_stream(&message, QIODevice::ReadOnly);
@@ -400,17 +403,12 @@ void TcpServerSingleton::incomingConnection(qintptr description)
     });
 
     //
-    connect(tmp_socket, &ServerTcpSocket::sig_disconnected_des, [this](qintptr des){
+    connect(tmp_socket, &ServerSocketThread::sig_disconnected_des, [this](qintptr des){
         close_socket(des);
     });
-    connect(tmp_socket, &ServerTcpSocket::sig_disconnected_qtid, [this](QtId qtid){
+    connect(tmp_socket, &ServerSocketThread::sig_disconnected_qtid, [this](QtId qtid){
         close_socket(qtid);
     });
-    // 客户端异常关闭时，可能不发送disconnected信号，这个时候会出现错误
-    connect(tmp_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), [](QAbstractSocket::SocketError err){
-        qDebug() << err;
-    });
-
 }
 
 TcpServerSingleton::TcpServerSingleton(QObject *parent) : QTcpServer(parent)
