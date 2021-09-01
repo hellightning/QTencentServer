@@ -132,8 +132,10 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
         }
     }else{
         qDebug() << "Sending message...";
-        ServerTcpSocket* tmp_socket = socket_hash[descriptor_hash[qtid]];
-        tmp_socket->write(message);
+        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid, QByteArray message){
+            ServerTcpSocket* tmp_socket = socket_hash[descriptor_hash[qtid]];
+            tmp_socket->write(message);
+        }, qtid, message);
         qDebug() << "Sent message:" << message;
     }
 }
@@ -142,9 +144,11 @@ void TcpServerSingleton::slot_send_message_des(qintptr des, const QByteArray mes
     /*
      * 服务器向指定descriptor对应的socket发送message
      */
-    qDebug() << "Sending message: ";
-    ServerTcpSocket* tmp_socket = socket_hash[des];
-    tmp_socket->write(message);
+    qDebug() << "Sending message: " << message;
+    QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray message){
+        ServerTcpSocket* tmp_socket = socket_hash[des];
+        tmp_socket->write(message);
+    },des, message);
     qDebug() << "Sent message:" << message;
 }
 
@@ -341,8 +345,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             int to_id;
             unsigned long long file_size;
             QString file_type;
+            QString file_name;
             QByteArray file_byte;
-            message_stream >> from_id >> to_id >> file_size >> file_type >> file_byte;
+            message_stream >> from_id >> to_id >> file_size >> file_type >> file_name >> file_byte;
             if((unsigned long long)file_byte.size() >= (1<<8) * sizeof(qint64)){
                 qDebug() << "Client(QtId=" << from_id << ") try to send large file.";
                 QByteArray large_feedback;
@@ -350,11 +355,11 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 l_stream << "SEND_MESSAGE" << to_id << from_id << "too large to receive!";
                 emit sig_send_message(from_id, large_feedback);
             }else{
-                qDebug() << "Client(QtId=" << from_id << ") send file to "<< "Client(QtId=" << to_id << "): ";
+                qDebug() << "Client(QtId=" << from_id << ") send file " << file_name+"."+file_type << " to Client(QtId=" << to_id << ").";
+                emit sig_update_gui(QString("Client(QtId=%1) send file " + file_name + "." + file_type + " to Client(QtId=%2).").arg(from_id).arg(to_id));
                 // 直接将报文原样进行转发给目标，不做额外操作
-                QtConcurrent::run(QThreadPool::globalInstance(), [this](int to_id, QByteArray feedback){
-                    emit sig_send_message(to_id, feedback);
-                }, to_id, message);
+                emit sig_send_message(to_id, message);
+
             }
         }else if(header.startsWith("SEND_GROUP_MESSAGE")){
             // 报文参数: 发送者id，群聊id，群聊内容
