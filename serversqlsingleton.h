@@ -9,6 +9,7 @@
 #include <QSqlRecord>
 #include <QSqlDriver>
 #include <QSqlError>
+#include <QMutex>
 
 typedef int AccountId;
 class ServerSqlSingleton : public QObject
@@ -74,8 +75,11 @@ private:
 };
 
 inline ServerSqlSingleton *ServerSqlSingleton::get_instance(){
+    QMutex instance_mutex;
     if(instance == nullptr){
+        instance_mutex.lock();
         instance = new ServerSqlSingleton();
+        instance_mutex.unlock();
     }
     return instance;
 }

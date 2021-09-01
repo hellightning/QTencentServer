@@ -10,8 +10,11 @@ TcpServerSingleton* TcpServerSingleton::get_instance(){
     /*
      * 获取单例
      */
+    QMutex instance_mutex;
     if(TcpServerSingleton::instance == nullptr){
+        instance_mutex.lock();
         TcpServerSingleton::instance = new TcpServerSingleton();
+        instance_mutex.unlock();
     }
     return TcpServerSingleton::instance;
 }
