@@ -5,6 +5,7 @@
 #include <QWaitCondition>
 #include <QTest>
 #include <QtTest/QTest>
+#include "serversqlsingleton.h"
 
 mytest::mytest(QObject *parent) : QObject(parent)
 {
@@ -13,17 +14,6 @@ mytest::mytest(QObject *parent) : QObject(parent)
 
 void mytest::UiTest()
 {
-    ServerMainWindow ui;
-    ui.show();
-    for (int i=0;i<20000; i++) {
-        QString qs = QString("$%1").arg(i);
-        QByteArray qb = qs.toLatin1();
-//        ui.add_backlog_list(qb);
-    }
+    ServerSqlSingleton* sql = ServerSqlSingleton::get_instance();
     QTest::qWait(1000000);
-}
-
-void mytest::OnlineAccountTest()
-{
-
 }

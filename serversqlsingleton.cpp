@@ -33,7 +33,8 @@ ServerSqlSingleton::ServerSqlSingleton(QObject* parent) : QObject(parent)
 
         if (!database.tables().contains("friends_table")) {
             //如果没有friends_table则新建一个
-            QString create_friends_table = "CREATE TABLE friends_table (id int, friend_id int, CONSTRAINT uc UNIQUE (id, friend_id))";
+            QString create_friends_table = "CREATE TABLE friends_table (id int, friend_id int, UNIQUE (id, friend_id))";
+            qDebug()<<create_friends_table;
             if (sql_query->prepare(create_friends_table)) {
                 if (sql_query->exec()) {
                     qDebug()<<"Create friends_table succesfully";
@@ -41,6 +42,7 @@ ServerSqlSingleton::ServerSqlSingleton(QObject* parent) : QObject(parent)
             }
             else {
                 qDebug()<<"Create friends_table command error!";
+                qDebug()<<sql_query->lastError();
             }
         }
         delete sql_query;
@@ -134,6 +136,15 @@ bool ServerSqlSingleton::insert_friend(AccountId id1, AccountId id2)
 {   //给id为id1的人加上id为id2的人的好友
     bool result = false;
     sql_query = new QSqlQuery(database);
+    QString search = QString("SELECT * FROM accounts_table WHERE id = %1").arg(id2);
+    if (sql_query->prepare(search)) {
+        if (sql_query->exec()) {
+            if (!sql_query->next()) {
+                qDebug()<<"No such person whose id is "<<id2;
+                return false;
+            }
+        }
+    }
     QString insert_friend = QString("INSERT INTO friends_table VALUES(%1, %2)").arg(id1).arg(id2);
     if (sql_query->prepare(insert_friend)) {
         if (sql_query->exec()) {
@@ -152,6 +163,15 @@ bool ServerSqlSingleton::delete_friend(AccountId id1, AccountId id2)
 {   //给id为id1的人删去id为id2的人的好友
     bool result = false;
     sql_query = new QSqlQuery(database);
+    QString search = QString("SELECT * FROM accounts_table WHERE id = %1").arg(id2);
+    if (sql_query->prepare(search)) {
+        if (sql_query->exec()) {
+            if (!sql_query->next()) {
+                qDebug()<<"No such person whose id is "<<id2;
+                return false;
+            }
+        }
+    }
     QString delete_friend = QString("DELETE FROM friends_table WHERE id = %1 AND friend_id = %2").arg(id1).arg(id2);
     if (sql_query->prepare(delete_friend)) {
         if (sql_query->exec()) {
