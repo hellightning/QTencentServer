@@ -30,7 +30,7 @@ void ServerSocketThread::memorize_descriptor(qintptr des)
 }
 
 void ServerSocketThread::close(){
-    tcp_socket->close();
+    checkpoint = false;
 }
 
 void ServerSocketThread::run(){
@@ -38,9 +38,9 @@ void ServerSocketThread::run(){
     connect(tcp_socket, &ServerTcpSocket::sig_disconnected_qtid, this, &ServerSocketThread::slot_disconnected_qtid);
     connect(tcp_socket, &ServerTcpSocket::sig_readyRead, this, &ServerSocketThread::slot_readyRead);
     tcp_socket->waitForConnected();
-    while(tcp_socket->state() == QAbstractSocket::ConnectedState){
+    while(tcp_socket->state() == QAbstractSocket::ConnectedState and checkpoint){
         QEventLoop loop;
-        QTimer::singleShot(100, &loop, SLOT(quit()));
+        QTimer::singleShot(1000, &loop, SLOT(quit()));
         loop.exec();
     }
 }

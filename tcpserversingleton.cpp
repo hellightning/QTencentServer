@@ -56,12 +56,16 @@ void TcpServerSingleton::close_server()
     qDebug() << "Closing server...";
     emit sig_update_gui("Closing server...");
     this->close();
+    for(auto item : online_set){
+        emit sig_online_decrease(item);
+    }
     qDebug() << "Server closed.";
     emit sig_update_gui("Server closed.");
 }
 
 void TcpServerSingleton::close_socket(qintptr des)
 {
+    mutex.lock();
     /*
      * 给定descriptor，关闭对应的socket
      */
@@ -75,13 +79,15 @@ void TcpServerSingleton::close_socket(qintptr des)
         qDebug() << 3;
         tmp_socket->quit();
         qDebug() << 4;
-        tmp_socket->wait();
+//        tmp_socket->wait();
+
         qDebug() << 5;
-        delete tmp_socket;
+        tmp_socket->deleteLater();
         qDebug() << 6;
         socket_hash.remove(des);
         qDebug() << "Socket(descriptor=" << des <<") closed.";
     }
+    mutex.unlock();
 }
 
 void TcpServerSingleton::close_socket(QtId qtid)
@@ -110,9 +116,10 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
      */
     qDebug() << "Send message to " << qtid;
     auto des = descriptor_hash.find(qtid);
-    if(des == descriptor_hash.end()
+    if(online_set.find(qtid) == online_set.end() and
+            (des == descriptor_hash.end()
             or (des != descriptor_hash.end()
-                and socket_hash.find(descriptor_hash[qtid]) == socket_hash.end())){
+                and socket_hash.find(descriptor_hash[qtid]) == socket_hash.end()))){
         qDebug() << "Client(QtId=" << qtid <<") is offline. Message storing...";
         QtId from_id, to_id;
         QByteArray header, sending, receiving;
@@ -264,7 +271,11 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             auto suc = fut_reg.result();
             if(suc){
                 if(socket_hash.find(des) != socket_hash.end()){
+                    heart_hash[qtid] = 0;
                     socket_hash[des]->memorize_qtid(qtid);
+                    descriptor_hash[qtid] = des;
+                    qDebug() << qtid;
+                    online_set.insert(qtid);
                 }
             }
         }else if(header.startsWith("GET_FRIEND_LIST")){
@@ -281,7 +292,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
                 feedback_stream << "FRIEND_LIST";
                 feedback_stream << friend_list.length();
-                for(auto item : friend_list){
+                for(int item : friend_list){
                     feedback_stream << item;
                     QString nickname = ServerSqlSingleton::get_instance()->select_nickname(item);
                     feedback_stream << nickname;
@@ -395,15 +406,15 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray feedback){
                 emit sig_send_message(des, feedback);
             }, des, feedback);
-        }else if(header.startsWith("HEARTBEAT")){
-            emit sig_send_message(des, QByteArray("HEARTBREAK"));
+        }else if(header.startsWith("HEART_BEAT")){
+            emit sig_send_message(des, QByteArray("HEART_BREAK"));
             QtId qtid;
+            qDebug() << QString("%1 : %2").arg(QTime::currentTime().minute()).arg(QTime::currentTime().second());
             message_stream >> qtid;
-            if(heart_hash.find(qtid) == heart_hash.end()){
-                heart_hash[qtid] = 0;
-            }else if(heart_hash[qtid] > 3){
-                heart_hash[qtid] = 0;
-            }
+            qDebug() << "HERERERE" << qtid;
+            mutex.lock();
+            heart_hash[qtid] = 0;
+            mutex.unlock();
         }
     });
 
@@ -442,19 +453,26 @@ QString TcpServerSingleton::get_nickname(QtId qtid)
 
 void TcpServerSingleton::timerEvent(QTimerEvent *e)
 {
+
     if(e->timerId() == heart_timer){
+        QList<int> lst;
+        qDebug() << heart_hash;
         for(auto item : online_set){
-            if(descriptor_hash.find(item) == descriptor_hash.end()
-                    or heart_hash.find(item) == heart_hash.end()
-                    or heart_hash[item] >= 3){
-                online_set.remove(item);
+            qDebug() << item << heart_hash;
+            if(heart_hash.find(item) == heart_hash.end()){
+                qDebug() << "UNSIGNED";
+            }else if(heart_hash[item] >= 3){
+                lst.append(item);
                 emit sig_update_gui(get_nickname(item) + "is now offline.");
-                if(descriptor_hash.find(item) != descriptor_hash.end()){
-                    close_socket(descriptor_hash[item]);
-                }
+                close_socket(item);
             }else{
-                heart_hash[item] = heart_hash[item]+1;
+                mutex.lock();
+                heart_hash[item] += 1;
+                mutex.unlock();
             }
+        }
+        for (auto e : lst) {
+            online_set.remove(e);
         }
     }
 }

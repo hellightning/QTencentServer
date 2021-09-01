@@ -44,6 +44,7 @@ private:
     int m_qtid = -1;            // 保存的qtid
     qintptr m_des = -1;         // 保存的socket描述符
     ServerTcpSocket* tcp_socket;// 封装的自定义socket对象的指针
+    bool checkpoint = true;     // 标记循环终止
 private slots:
     /**
      * @brief 接受socket断开的信号并转发

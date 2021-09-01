@@ -8,6 +8,7 @@
 #include <QHostAddress>
 #include <QHostInfo>
 #include <QTimerEvent>
+#include <QMutex>
 #include "servertcpsocket.h"
 #include "serversqlsingleton.h"
 #include "serversocketthread.h"
@@ -76,6 +77,7 @@ private:
     QHostAddress hostaddr;                                              // host地址
     QHostInfo hostinfo;                                                 // host信息
     int heart_timer;                                                    // 检测心跳包的timer，每10s进行检测
+    QMutex mutex;                                                       // 锁
 
 signals:
     /**
