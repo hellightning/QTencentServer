@@ -180,7 +180,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         tmp_socket->memorize_descriptor(description);
     }
     qDebug() << "New client requests for connexion.";
-    qDebug() << "Client Descriptor: " << tmp_socket->socketDescriptor();
+    qDebug() << "Client Descriptor: " << description;
     // 类图上的handler，用lambda处理
     connect(tmp_socket, &ServerSocketThread::sig_readyRead, [this](qintptr des, QByteArray message){
         // 用换行符/n拆分消息
@@ -310,7 +310,14 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                         && ServerSqlSingleton::get_instance()->insert_friend(to_id, from_id)){
                     qDebug() << instance->get_nickname(to_id);
                     feedback_stream << "ADD_FRIEND_SUCCEED" << to_id << instance->get_nickname(to_id);
-                    emit sig_update_gui(nickname_hash[from_id] + " add " + nickname_hash[to_id] + " as new friend.");
+                    emit sig_update_gui(get_nickname(from_id) + " add " + get_nickname(to_id) + " as new friend.");
+
+                    if(descriptor_hash.find(to_id) != descriptor_hash.end()){
+                        QByteArray t_feedback;
+                        QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
+                        t_stream << "ADD_FRIEND_SUCCEED" << from_id << instance->get_nickname(from_id);
+                        emit sig_send_message(descriptor_hash[from_id], t_feedback);
+                    }
                 }else{
                     feedback_stream << "ADD_FFIEND_FAILED";
                 }
