@@ -323,21 +323,39 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                 emit sig_send_message(des, feedback);
                 emit sig_update_gui(nickname_hash[from_id] + " add " + nickname_hash[to_id] + " as new friend.");
             }, from_id, to_id, des);
-        }else if(header.startsWith("SEND_MESSAGE")){
+        }else if(header.startsWith("SEND_MESSAGE") or header.startsWith("SEND_FILE")){
             // 报文参数：发送者id，发送对象id，发送内容
             int from_id;
             int to_id;
             QString chat_content;
             message_stream >> from_id >> to_id >> chat_content;
             chat_content = chat_content.trimmed();
-//            QByteArray feedback;
-//            QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
-//            feedback_stream << message;
             qDebug() << "Client(QtId=" << from_id << ") send to "<< "Client(QtId=" << to_id << "): " << chat_content;
             // 直接将报文原样进行转发给目标，不做额外操作
             QtConcurrent::run(QThreadPool::globalInstance(), [this](int to_id, QByteArray feedback){
                 emit sig_send_message(to_id, feedback);
             }, to_id, message);
+        }else if(header.startsWith("SEND_GROUP_MESSAGE")){
+            // 报文参数: 发送者id，群聊id，群聊内容
+            int from_id;
+            int group_id;
+            QString chat_content;
+            message_stream >> from_id >> group_id >> chat_content;
+            QtConcurrent::run(QThreadPool::globalInstance(), [this](int from_id, int group_id, QString chat_content){
+                // TODO: 从db获取群号对应的群员名单
+                auto group_list = QList<QtId>();//ServerSqlSingleton::get_instance()->select_grouper(group_id);
+                for(auto item : group_list){
+
+                    if(item != from_id){
+                        QByteArray feedback;
+                        QDataStream f_stream(&feedback, QIODevice::WriteOnly);
+                        f_stream << "SEND_GROUP_MESSAGE" << group_id << from_id << item << chat_content;
+                        emit sig_send_message(item, feedback);
+                    }
+                }
+            }, from_id, group_id, chat_content);
+
+
         }else if(header.startsWith("REQUEST_MESSAGE")){
             // 报文参数：请求者id，请求对象id
             // 用来请求缓存的离线信息，待完善
@@ -366,7 +384,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
         close_socket(qtid);
     });
     // 客户端异常关闭时，可能不发送disconnected信号，这个时候会出现错误
-    connect(tmp_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), [this](QAbstractSocket::SocketError err){
+    connect(tmp_socket, QOverload<QAbstractSocket::SocketError>::of(&QAbstractSocket::error), [](QAbstractSocket::SocketError err){
         qDebug() << err;
     });
 
