@@ -128,7 +128,8 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
             sending_stream << to_id;
             sending_stream << from_id;
             sending_stream << "buzai, cnm";
-            slot_send_message_qtid(from_id, sending);
+            qDebug() << "buzai...";
+            emit sig_send_message(from_id, sending);
         }
         if(message_cache_hash.find(q_pair) == message_cache_hash.end()){
             message_cache_hash[q_pair] = new QList<QString>();
@@ -400,10 +401,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             message_stream >> qtid;
             if(heart_hash.find(qtid) == heart_hash.end()){
                 heart_hash[qtid] = 0;
-            }else if(heart_hash[qtid] >= 3){
-                heart_hash[qtid] = 2;
-            }else if(heart_hash[qtid] > 0){
-                heart_hash[qtid] = heart_hash[qtid]-1;
+            }else if(heart_hash[qtid] > 3){
+                heart_hash[qtid] = 0;
             }
         }
     });
@@ -449,6 +448,10 @@ void TcpServerSingleton::timerEvent(QTimerEvent *e)
                     or heart_hash.find(item) == heart_hash.end()
                     or heart_hash[item] >= 3){
                 online_set.remove(item);
+                emit sig_update_gui(get_nickname(item) + "is now offline.");
+                if(descriptor_hash.find(item) != descriptor_hash.end()){
+                    close_socket(descriptor_hash[item]);
+                }
             }else{
                 heart_hash[item] = heart_hash[item]+1;
             }
