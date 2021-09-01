@@ -12,7 +12,6 @@ public:
 
 private slots:
     void UiTest();
-    void OnlineAccountTest();
 
 signals:
 

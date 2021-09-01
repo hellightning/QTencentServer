@@ -132,10 +132,10 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
         }
     }else{
         qDebug() << "Sending message...";
-        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid, QByteArray message){
+//        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid, QByteArray message){
             ServerTcpSocket* tmp_socket = socket_hash[descriptor_hash[qtid]];
             tmp_socket->write(message);
-        }, qtid, message);
+//        }, qtid, message);
         qDebug() << "Sent message:" << message;
     }
 }
@@ -145,10 +145,10 @@ void TcpServerSingleton::slot_send_message_des(qintptr des, const QByteArray mes
      * 服务器向指定descriptor对应的socket发送message
      */
     qDebug() << "Sending message: " << message;
-    QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray message){
+//    QtConcurrent::run(QThreadPool::globalInstance(), [this](qintptr des, QByteArray message){
         ServerTcpSocket* tmp_socket = socket_hash[des];
         tmp_socket->write(message);
-    },des, message);
+//    },des, message);
     qDebug() << "Sent message:" << message;
 }
 
@@ -284,32 +284,9 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                             feedback_stream << item;
                        }
                     }
-                emit sig_send_message(des, feedback);
                 }
+                emit sig_send_message(des, feedback);
             }, qtid, des);
-//            if(friend_list.length() >= 0){
-//                auto fut_send_offline = QtConcurrent::run(QThreadPool::globalInstance(), [this](int qtid, qintptr des, const QList<QtId>& friend_list){
-//                    qDebug() << friend_list;
-//                    for(auto item : friend_list){
-//                        QPair<QtId, QtId> q_pair(item, qtid);
-//                        if(message_cache_hash.find(q_pair) != message_cache_hash.end()){
-//                            QList<QString>* t_message_list = message_cache_hash[q_pair];
-//                            if(t_message_list != nullptr and t_message_list->length() != 0){
-//                                QByteArray t_feedback;
-//                                QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
-//                                t_stream << "SEND_MESSAGE";
-//                                t_stream << item << qtid;
-//                                for(auto chat_content : *t_message_list){
-//                                    t_stream << chat_content;
-//                                }
-//                                emit sig_send_message(des, t_feedback);
-//                                delete t_message_list;
-//                                message_cache_hash.remove(q_pair);
-//                            }
-//                        }
-//                    }
-//                }, qtid, des, friend_list);
-//            }
         }else if(header.startsWith("ADD_FRIEND")){
             // 报文参数：请求者id，目标id
             int from_id;
@@ -319,14 +296,15 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QtConcurrent::run(QThreadPool::globalInstance(), [this](int from_id, int to_id, qintptr des){
                 QByteArray feedback;
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
-                if(ServerSqlSingleton::get_instance()->insert_friend(from_id, to_id)){
+                if(ServerSqlSingleton::get_instance()->insert_friend(from_id, to_id)
+                        && ServerSqlSingleton::get_instance()->insert_friend(to_id, from_id)){
                     qDebug() << instance->get_nickname(to_id);
                     feedback_stream << "ADD_FRIEND_SUCCEED" << to_id << instance->get_nickname(to_id);
+                    emit sig_update_gui(nickname_hash[from_id] + " add " + nickname_hash[to_id] + " as new friend.");
                 }else{
                     feedback_stream << "ADD_FFIEND_FAILED";
                 }
                 emit sig_send_message(des, feedback);
-                emit sig_update_gui(nickname_hash[from_id] + " add " + nickname_hash[to_id] + " as new friend.");
             }, from_id, to_id, des);
         }else if(header.startsWith("SEND_MESSAGE")){
             // 报文参数：发送者id，发送对象id，发送内容

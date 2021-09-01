@@ -1,11 +1,14 @@
-/**
- * @brief 服务端socket的类，封装了服务端需要的一些方法和信号
+/** @file servertcpsocket.h
+ * @brief 服务端socket的类
+ * @details 封装了服务端需要的一些方法和信号
  */
 #ifndef SERVERTCPSOCKET_H
 #define SERVERTCPSOCKET_H
 
 #include <QTcpSocket>
-
+/**
+ * @brief The ServerTcpSocket class
+ */
 class ServerTcpSocket : public QTcpSocket
 {
     Q_OBJECT
