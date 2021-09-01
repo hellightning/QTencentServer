@@ -416,3 +416,18 @@ QString TcpServerSingleton::get_nickname(QtId qtid)
     }
     return nickname_hash[qtid];
 }
+
+void TcpServerSingleton::timerEvent(QTimerEvent *e)
+{
+    if(e->timerId() == heart_timer){
+        for(auto item : online_set){
+            if(descriptor_hash.find(item) == descriptor_hash.end()
+                    or heart_hash.find(item) == heart_hash.end()
+                    or heart_hash[item] >= 3){
+                online_set.remove(item);
+            }else{
+                heart_hash[item] = heart_hash[item]+1;
+            }
+        }
+    }
+}
