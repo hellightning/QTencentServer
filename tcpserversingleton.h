@@ -67,7 +67,7 @@ private:
     QString get_nickname(QtId qtid);
     static TcpServerSingleton* instance;                                // Server单例的指针，防止重复创建
     QString server_ip = "127.0.0.1";                                    // Server的ip地址，默认为本机回环地址
-    QHash<qintptr, ServerSocketThread*> socket_hash;                       // 从描述符到对应socket的hash
+    QHash<qintptr, ServerSocketThread*> socket_hash;                    // 从描述符到对应封装socket的QThread的hash
     QHash<QtId, qintptr> descriptor_hash;                               // 从QtId到对应描述符的hash
     QHash<QtId, QString> nickname_hash;                                 // 从QtId到昵称的hash，加快查找速度
     QHash<QtId, quint16> heart_hash;                                    // 记录当前用户心跳包状态的hash
@@ -75,7 +75,7 @@ private:
     QSet<QtId> online_set;                                              // 记录在线客户端的id
     QHostAddress hostaddr;                                              // host地址
     QHostInfo hostinfo;                                                 // host信息
-    int heart_timer;
+    int heart_timer;                                                    // 检测心跳包的timer，每10s进行检测
 
 signals:
     /**
