@@ -123,7 +123,7 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
         receiving_stream >> header >> from_id >> to_id >> chat_content;
         emit sig_update_gui(get_nickname(from_id) + " send to " + get_nickname(to_id) + ": " + chat_content);
         QPair<QtId, QtId> q_pair(from_id, to_id);
-        if(header == "SEND_MESSAGE" or header == "SEND_FILE"){
+        if(header.startsWith("SEND_MESSAGE") or header.startsWith("SEND_FILE")){
             sending_stream << header;
             sending_stream << to_id;
             sending_stream << from_id;
