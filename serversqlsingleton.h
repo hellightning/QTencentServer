@@ -1,3 +1,7 @@
+/** @file serversqlsingleton.h
+ * @brief 服务器数据库模块
+ * @details 使用SQL语句
+ */
 #ifndef SERVERSQLSINGLETON_H
 #define SERVERSQLSINGLETON_H
 
@@ -12,6 +16,11 @@
 #include <QMutex>
 
 typedef int AccountId;
+
+/**
+ * @brief 服务器数据库模块实现类
+ */
+
 class ServerSqlSingleton : public QObject
 {
     Q_OBJECT
