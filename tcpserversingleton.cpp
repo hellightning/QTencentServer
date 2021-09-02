@@ -40,7 +40,9 @@ void TcpServerSingleton::open_server(QString ip, QString port)
      * 被openServerButton调用
      * 从UI拉取ip和端口号，开始监听
      */
-    if(this->listen(QHostAddress(ip), port.toUInt())){
+    if(this->isListening()){
+        emit sig_update_gui("Server is already listening!");
+    }else if(this->listen(QHostAddress(ip), port.toUInt())){
         qDebug() << "Server listening...";
         qDebug() << "Server ip: " << ip;
         qDebug() << "Server port: " + port;
@@ -155,8 +157,8 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
     }else{
         qDebug() << "Sending message...";
 //        QtConcurrent::run(QThreadPool::globalInstance(), [this](QtId qtid, QByteArray message){
-            ServerSocketThread* tmp_socket = socket_hash[descriptor_hash[qtid]];
-            tmp_socket->write(message);
+        ServerSocketThread* tmp_socket = socket_hash[descriptor_hash[qtid]];
+        tmp_socket->write(message);
 //        }, qtid, message);
         qDebug() << "Sent message:" << message;
     }
