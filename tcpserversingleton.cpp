@@ -322,8 +322,8 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             QtConcurrent::run(QThreadPool::globalInstance(), [this](int from_id, int to_id, qintptr des){
                 QByteArray feedback;
                 QDataStream feedback_stream(&feedback, QIODevice::WriteOnly);
-                if(ServerSqlSingleton::get_instance()->insert_friend(from_id, to_id)
-                        && ServerSqlSingleton::get_instance()->insert_friend(to_id, from_id)){
+                if(from_id != to_id and (ServerSqlSingleton::get_instance()->insert_friend(from_id, to_id)
+                        and ServerSqlSingleton::get_instance()->insert_friend(to_id, from_id))){
                     qDebug() << instance->get_nickname(to_id);
                     feedback_stream << "ADD_FRIEND_SUCCEED" << to_id << instance->get_nickname(to_id);
                     emit sig_update_gui(get_nickname(from_id) + " add " + get_nickname(to_id) + " as new friend.");
