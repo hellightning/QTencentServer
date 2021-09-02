@@ -121,10 +121,11 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
      */
     qDebug() << "Send message to " << qtid;
     auto des = descriptor_hash.find(qtid);
-    if(online_set.find(qtid) == online_set.end() and
+    if(
             (des == descriptor_hash.end()
             or (des != descriptor_hash.end()
-                and socket_hash.find(descriptor_hash[qtid]) == socket_hash.end()))){
+                and socket_hash.find(descriptor_hash[qtid]) == socket_hash.end())
+             or (socket_hash[descriptor_hash[qtid]]->state() == QAbstractSocket::UnconnectedState))){
         qDebug() << "Client(QtId=" << qtid <<") is offline. Message storing...";
         QtId from_id, to_id;
         QByteArray header, sending, receiving;
@@ -329,7 +330,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                     qDebug() << instance->get_nickname(to_id);
                     feedback_stream << "ADD_FRIEND_SUCCEED" << to_id << instance->get_nickname(to_id);
                     emit sig_update_gui(get_nickname(from_id) + " add " + get_nickname(to_id) + " as new friend.");
-                    if(descriptor_hash.find(to_id) != descriptor_hash.end()){
+                    if(online_set.find(to_id) != online_set.end()  and descriptor_hash.find(to_id) != descriptor_hash.end()){
                         QByteArray t_feedback;
                         QDataStream t_stream(&t_feedback, QIODevice::WriteOnly);
                         t_stream << "ADD_FRIEND_SUCCEED" << from_id << instance->get_nickname(from_id);

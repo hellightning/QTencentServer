@@ -35,6 +35,7 @@ public:
      * @brief 关闭本线程封装的socket
      */
     void close();
+    QAbstractSocket::SocketState state();
 protected:
     /**
      * @brief 重写继承自QThread类的run，在套接字保持连接时死循环
