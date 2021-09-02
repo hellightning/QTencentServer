@@ -13,7 +13,10 @@ QByteArray ServerSocketThread::read(){
 }
 
 void ServerSocketThread::write(QByteArray message){
-    tcp_socket->write(message);
+    if(tcp_socket->state() == QAbstractSocket::ConnectedState){
+        tcp_socket->write(message);
+    }
+
 }
 
 void ServerSocketThread::memorize_qtid(int qtid)
@@ -58,4 +61,8 @@ void ServerSocketThread::slot_disconnected_des(qintptr des)
 void ServerSocketThread::slot_readyRead(qintptr des, QByteArray message)
 {
     emit ServerSocketThread::sig_readyRead(des, message);
+}
+
+QAbstractSocket::SocketState ServerSocketThread::state(){
+    return tcp_socket->state();
 }
