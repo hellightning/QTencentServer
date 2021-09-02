@@ -77,18 +77,11 @@ void TcpServerSingleton::close_socket(qintptr des)
     if(socket_hash.find(des) == socket_hash.end()){
         qDebug() << "Socket(descriptor=" << des <<") not found.";
     }else{
-        qDebug() << 1;
         ServerSocketThread* tmp_socket = socket_hash[des];
-        qDebug() << 2;
         tmp_socket->close();
-        qDebug() << 3;
         tmp_socket->quit();
-        qDebug() << 4;
 //        tmp_socket->wait();
-
-        qDebug() << 5;
         tmp_socket->deleteLater();
-        qDebug() << 6;
         socket_hash.remove(des);
         qDebug() << "Socket(descriptor=" << des <<") closed.";
     }
@@ -337,7 +330,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
                         emit sig_send_message(descriptor_hash[to_id], t_feedback);
                     }
                 }else{
-                    feedback_stream << "ADD_FFIEND_FAILED";
+                    feedback_stream << "ADD_FRIEND_FAILED";
                 }
                 emit sig_send_message(des, feedback);
             }, from_id, to_id, des);
@@ -418,6 +411,7 @@ void TcpServerSingleton::incomingConnection(qintptr description)
             qDebug() << QString("%1 : %2").arg(QTime::currentTime().minute()).arg(QTime::currentTime().second());
             message_stream >> qtid;
             qDebug() << "HERERERE" << qtid;
+            // mutex加锁，表示
             mutex.lock();
             heart_hash[qtid] = 0;
             mutex.unlock();

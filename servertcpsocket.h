@@ -15,12 +15,12 @@ class ServerTcpSocket : public QTcpSocket
 public:
     explicit ServerTcpSocket(QObject *parent = nullptr);
     /**
-     * @brief 在登陆时记录该TcpSocket的descriptor
+     * @brief memorize_descriptor 在登陆时记录该TcpSocket的descriptor
      * @param des 记录的描述符
      */
     void memorize_descriptor(qintptr des);
     /**
-     * @brief 登陆成功时记录该TcpSocket对应的QtId
+     * @brief memorize_qtid 登陆成功时记录该TcpSocket对应的QtId
      * @param qtid socket所连接的用户的QtId
      */
     void memorize_qtid(int qtid);
@@ -30,17 +30,17 @@ private:
     int qtid = -1;                              // 连接用户的QtId
 signals:
     /**
-     * @brief 发送socket断开连接的信号
+     * @brief sig_disconnected_qtid 发送socket断开连接的信号
      * @param qtid 断开连接的socket连接用户的QtId
      */
     void sig_disconnected_qtid(int qtid);
     /**
-     * @brief 发送socket断开连接的信号
+     * @brief sig_disconnected_des 发送socket断开连接的信号
      * @param des 断开连接的socket的描述符
      */
     void sig_disconnected_des(qintptr des);
     /**
-     * @brief 发送收到信息的信号，以开始读信息
+     * @brief sig_readyRead 发送收到信息的信号，以开始读信息
      * @param des 收到信号的socket的描述符
      * @param message 收到的信息
      */

@@ -1,4 +1,5 @@
 /**
+ * @file tcpserversingleton.h
  * @brief 聊天系统的Server单例类
  */
 #ifndef TCPSERVERSINGLETON_H
@@ -20,45 +21,49 @@ class TcpServerSingleton : public QTcpServer
     Q_OBJECT
 public:
     /**
-     * @brief 获取服务单例对象的指针
+     * @brief get_instance 获取服务单例对象的指针
      */
     static TcpServerSingleton* get_instance();
     /**
-     * @brief 获取本地网络消息
+     * @brief get_network_info 获取本地网络消息
      */
     void get_network_info();
     /**
-     * @brief 以gui上的ip和端口号开启服务
+     * @brief open_server 以gui上的ip和端口号开启服务
      * @param ip
      * @param port
      */
     void open_server(QString ip, QString port);
     /**
-     * @brief 关闭当前服务
+     * @brief close_server 关闭当前服务
      */
     void close_server();
     /**
-     * @brief 根据给定的socketDescriptor，关闭对应连接的套接字
+     * @brief close_socket 根据给定的socketDescriptor，关闭对应连接的套接字
      * @param des 描述符
      */
     void close_socket(qintptr des);
     /**
-     * @brief 根据给定的QtId，关闭对应连接的套接字
+     * @brief close_socket 根据给定的QtId，关闭对应连接的套接字
      * @param qtid
      */
     void close_socket(QtId qtid);
 
 protected:
     /**
-     * @brief override 有新的连接进入服务器时调用，自动为其分配描述符
+     * @brief incomingConnection override 有新的连接进入服务器时调用，自动为其分配描述符
      * @param des 描述符
      */
     void incomingConnection(qintptr description);
+    /**
+     * @brief timerEvent 定时器，检测心跳信号
+     * @param e timer
+     */
     virtual void timerEvent(QTimerEvent* e);
 private:
     /**
-     * @brief 根据给定的socketDescriptor，关闭对应连接的套接字
-     * @param des 描述符
+     * @brief TcpServerSingleton 构造函数
+     * @param parent
      */
     explicit TcpServerSingleton(QObject *parent = nullptr);
     /**
@@ -81,52 +86,52 @@ private:
 
 signals:
     /**
-     * @brief 给对应qtid发送消息
+     * @brief sig_send_message 给对应qtid发送消息
      * @param qtid 发送对象的QtId
      * @param message 发送的消息
      */
     void sig_send_message(int qtid, const QByteArray message);
     /**
-     * @brief 给对应描述符发送消息
+     * @brief sig_send_message 给对应描述符发送消息
      * @param des 发送对象的socketDescriptor
      * @param message 发送的消息
      */
     void sig_send_message(qintptr des, QByteArray message);
     /**
-     * @brief 发送获取本机ip地址的信号
+     * @brief sig_get_ip_list 发送获取本机ip地址的信号
      * @param host_info 本机的host信息
      */
     void sig_get_ip_list(QHostInfo host_info);
     /**
-     * @brief 当有新用户上线时，给ui发送信号
-     * @param 上线用户的QtId
+     * @brief sig_online_increase 当有新用户上线时，给ui发送信号
+     * @param qtid 上线用户的QtId
      */
     void sig_online_increase(int);
     /**
-     * @brief 当已在线上的用户下线时，给ui发送信号
-     * @param 下线用户的QtId
+     * @brief sig_online_decrease 当已在线上的用户下线时，给ui发送信号
+     * @param qtid 下线用户的QtId
      */
     void sig_online_decrease(int);
     /**
-     * @brief 向ui上的log发送信息以显示
-     * @param 发送的消息
+     * @brief sig_online_update_gui 向ui上的log发送信息以显示
+     * @param QString 发送的消息
      */
     void sig_update_gui(QString);
 private slots:
     /**
-     * @brief 接受发送信息的信号，向指定用户发送信息
+     * @brief slot_send_message_qtid 接受发送信息的信号，向指定用户发送信息
      * @param qtid 发送目标的QtId
      * @param message 发送的信息
      */
     void slot_send_message_qtid(int qtid, const QByteArray message);
     /**
-     * @brief 接受发送信息的信号，向指定用户发送信息
+     * @brief slot_send_message_des 接受发送信息的信号，向指定用户发送信息
      * @param qtid 发送目标的QtId
      * @param message 发送的信息
      */
     void slot_send_message_des(qintptr qtid, const QByteArray message);
     /**
-     * @brief 接受获取ip的信号，获取本机的所有ip(ipV4, ipV6, vm)
+     * @brief slot_get_address 接受获取ip的信号，获取本机的所有ip(ipV4, ipV6, vm)
      * @param host_info 本机的host信息
      */
     void slot_get_address(QHostInfo host_info);
