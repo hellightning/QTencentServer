@@ -140,7 +140,7 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
             sending_stream << header;
             sending_stream << to_id;
             sending_stream << from_id;
-            sending_stream << QString("%1:%2 buzai,cnm").arg(QTime::currentTime().hour()).arg(QTime::currentTime().minute());
+            sending_stream << QString("%1:%2 我现在不在线，请之后再联系我").arg(QTime::currentTime().hour()).arg(QTime::currentTime().minute());
             qDebug() << "buzai...";
             emit sig_send_message(from_id, sending);
         }
@@ -148,7 +148,7 @@ void TcpServerSingleton::slot_send_message_qtid(int qtid, const QByteArray messa
             message_cache_hash[q_pair] = new QList<QString>();
         }
         // 超出缓存上限则拒绝
-        if(message_cache_hash[q_pair]->length() >= 50 or chat_content.startsWith("buzai, cnm") or header == "SEND_FILE"){
+        if(message_cache_hash[q_pair]->length() >= 50 or chat_content.startsWith("我现在不在") or header == "SEND_FILE"){
             qDebug() << "Store request refused.";
         }else{
             message_cache_hash[q_pair]->append(chat_content);
